@@ -3,10 +3,15 @@
 import click
 
 
-@click.command()
-def hello():
-    print("hello!")
+@click.group()
+def main():
+    pass
+
+
+@main.command(name="list")
+def list_lights() -> None:
+    print("listing...")
 
 
 if __name__ == "__main__":
-    hello()
+    main()

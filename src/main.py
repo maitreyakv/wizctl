@@ -2,6 +2,8 @@
 
 import click
 
+from discovery import discover_lights
+
 
 @click.group()
 def main():
@@ -9,8 +11,9 @@ def main():
 
 
 @main.command(name="list")
-def list_lights() -> None:
-    print("listing...")
+@click.option("-w", "--wait", "wait_time", type=int, default=1)
+def list_lights(wait_time: int) -> None:
+    discover_lights(wait_time=wait_time)
 
 
 if __name__ == "__main__":

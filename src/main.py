@@ -1,13 +1,18 @@
 """Main program for CLI tool"""
 
+import logging
+
 import click
 
 from discovery import discover_lights
 
 
 @click.group()
-def main():
-    pass
+@click.option("--verbose/", is_flag=True)
+def main(verbose: bool):
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO, handlers=[logging.StreamHandler()]
+    )
 
 
 @main.command(name="list")

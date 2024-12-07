@@ -3,29 +3,43 @@
 from abc import ABC
 from typing import Literal, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel as BaseModel_
+from pydantic import ConfigDict, Field, SerializationInfo, field_serializer
+from pydantic_extra_types.mac_address import MacAddress
 
 
-class BaseMessage(BaseModel, ABC):
+class BaseModel(BaseModel_, ABC):
+    model_config = ConfigDict(extra="forbid")
+
     def to_message_bytes(self) -> bytes:
         return self.model_dump_json(by_alias=True).encode()
 
 
-class RegistrationBase(BaseMessage, ABC):
+class RegistrationBase(BaseModel, ABC):
     method: Literal["registration"] = "registration"
 
 
 class RegistrationRequest(RegistrationBase):
     class _Params(BaseModel):
         register_: bool = Field(alias="register")
-        phoneMac: str
+        phoneMac: MacAddress
         phoneIp: str
+
+        @field_serializer("phoneMac")
+        def serialize_phoneMac(self, phoneMac: MacAddress, _info: SerializationInfo):
+            return str(phoneMac).replace(":", "")
 
     params: _Params
 
     @classmethod
     def new_with_dummy_phone(cls) -> Self:
-        return cls(params=cls._Params(register=False, phoneMac="000000000000", phoneIp="0.0.0.0"))
+        return cls(
+            params=cls._Params(
+                register=False,
+                phoneMac="00:00:00:00:00:00",
+                phoneIp="0.0.0.0",
+            )
+        )
 
 
 class RegistrationResponse(RegistrationBase):

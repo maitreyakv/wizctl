@@ -15,11 +15,17 @@ class BaseModel(BaseModel_, ABC):
         return self.model_dump_json(by_alias=True).encode()
 
 
+class RequestBase(BaseModel_, ABC): ...
+
+
+class ResponseBase(BaseModel_, ABC): ...
+
+
 class RegistrationBase(BaseModel, ABC):
     method: Literal["registration"] = "registration"
 
 
-class RegistrationRequest(RegistrationBase):
+class RegistrationRequest(RegistrationBase, RequestBase):
     class _Params(BaseModel):
         register_: bool = Field(alias="register")
         phoneMac: MacAddress
@@ -42,7 +48,7 @@ class RegistrationRequest(RegistrationBase):
         )
 
 
-class RegistrationResponse(RegistrationBase):
+class RegistrationResponse(RegistrationBase, ResponseBase):
     class _Result(BaseModel):
         mac: str
         success: bool

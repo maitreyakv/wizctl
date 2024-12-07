@@ -4,7 +4,10 @@ import logging
 
 import click
 
-from discovery import discover_lights
+from messages import RegistrationRequest, RegistrationResponse
+from network import broadcast_udp
+
+DISCOVERY_BROADCAST_MESSAGE = RegistrationRequest.new_with_dummy_phone().to_message_bytes()
 
 
 @click.group()
@@ -18,7 +21,10 @@ def main(verbose: bool):
 @main.command(name="list")
 @click.option("-w", "--wait", "wait_time", type=int, default=1)
 def list_lights(wait_time: int) -> None:
-    discover_lights(wait_time=wait_time)
+    print("IP Address | MAC Address\n------------------------")
+    for data, (ip_addr, _) in broadcast_udp(DISCOVERY_BROADCAST_MESSAGE, wait_time):
+        response = RegistrationResponse.model_validate_json(data)
+        print(f"{ip_addr:10s} | {response.result.mac}")
 
 
 if __name__ == "__main__":

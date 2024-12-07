@@ -6,13 +6,14 @@ clean:
 
 lint: 
 	cargo fmt --check
+	cargo clippy
 
-watch_ports:
-	watch -n 1 "ss -at -u '( dport = :38899 or sport = :38899 )'"
+run:
+	cargo run
 
 # TEMP 
-# list: 
-# 	uv run python src/main.py list
-#
+list: 
+	cargo run list
+
 # watch_list:
 # 	watch -n 1 uv run python src/main.py list

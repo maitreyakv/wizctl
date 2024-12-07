@@ -2,9 +2,6 @@
 use clap::{Parser, Subcommand};
 use error_stack::{Result, ResultExt};
 use thiserror::Error;
-
-mod message;
-
 use wizctl::message::GetPilotRequest;
 
 #[derive(Parser)]
@@ -21,7 +18,7 @@ enum Commands {
 }
 
 fn list_lights() -> Result<(), serde_json::Error> {
-    let request = GetPilotRequest::new();
+    let request = GetPilotRequest::default();
     let request_data = serde_json::to_string(&request)
         .attach_printable("Could not serialize getPilot request to JSON!")
         .attach(request)?;

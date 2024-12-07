@@ -1,22 +1,18 @@
 /// Data model for WiZ UDP messages
 use serde::{Deserialize, Serialize};
 
-use serde_json;
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GetPilotRequest {
     method: String,
 }
 
-impl GetPilotRequest {
-    pub fn new() -> Self {
-        GetPilotRequest {
+impl Default for GetPilotRequest {
+    fn default() -> Self {
+        Self {
             method: "getPilot".to_string(),
         }
     }
 }
-
-//impl Message<'_> for GetPilotRequest {}
 
 #[derive(Serialize, Deserialize, Debug)]
 struct GetPilotResponseResult {
@@ -38,5 +34,3 @@ struct GetPilotResponse {
     env: String,
     result: GetPilotResponseResult,
 }
-
-//impl Message<'_> for GetPilotResponse {}

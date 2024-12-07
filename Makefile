@@ -3,7 +3,7 @@ build:
 	uv sync
 
 clean-mypy:
-	rm -rf .mpypy_cache
+	rm -rf .mypy_cache
 
 clean-venv:	
 	rm -rf .venv

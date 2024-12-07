@@ -1,10 +1,27 @@
 """Data model for WiZ UDP messages"""
 
 from abc import ABC
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel as BaseModel_
-from pydantic import ConfigDict
+from pydantic import BeforeValidator, ConfigDict
+from pydantic_extra_types.mac_address import MacAddress as MacAddress_
+
+
+def parse_mac_address(mac: str) -> str:
+    chars = list(mac)
+
+    def _iterate_with_colon_insertion():
+        while chars:
+            yield chars.pop(0)
+            yield chars.pop(0)
+            if chars:
+                yield ":"
+
+    return "".join(_iterate_with_colon_insertion())
+
+
+MacAddress = Annotated[MacAddress_, BeforeValidator(parse_mac_address)]
 
 
 class BaseModel(BaseModel_, ABC):
@@ -23,7 +40,7 @@ class GetPilotRequest(GetPilotBase): ...
 
 class GetPilotResponse(GetPilotBase):
     class _Result(BaseModel):
-        mac: str
+        mac: MacAddress
         rssi: int
         state: bool
         sceneId: int

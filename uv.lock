@@ -69,6 +69,19 @@ wheels = [
 ]
 
 [[package]]
+name = "polars"
+version = "1.16.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/43/80/d845897273be97a3e73b59be711deda375b638330d591a7ef8132c20f52f/polars-1.16.0.tar.gz", hash = "sha256:dd99808b833872babe02434a809fd45c1cffe66a3d57123cdc5e447c7753d328", size = 4192568 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8e/b0/51c944ecd58b3ebc81eb03b50448127ff85fd9448063094524e0c6693c75/polars-1.16.0-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:072f5ff3b5fe05797c59890de0e464b34ede75a9735e7d7221622fa3a0616d8e", size = 34735038 },
+    { url = "https://files.pythonhosted.org/packages/61/2f/d0b45007f2ae4b4926070b420c8525840b9757013cd96077bcde40807ecb/polars-1.16.0-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:ebaf7a1ea114b042fa9f1cd17d49436279eb30545dd74361a2f5e3febeb867cd", size = 30577461 },
+    { url = "https://files.pythonhosted.org/packages/31/9e/21e05959323883abcee799837d8cac08adf10a48c233432993757e41791a/polars-1.16.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e626d21dcd2566e1442dac414fe177bc70ebfc2f16620d59d778b1b774361018", size = 36006233 },
+    { url = "https://files.pythonhosted.org/packages/25/80/da5c3cd248c7642d1feb896f0a27a0860c607f8cdde3e75457182e4c76c6/polars-1.16.0-cp39-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:53debcce55f68731ee2c7d6c787afdee26860ed6576f1ffa0cb9111b57f82857", size = 32348398 },
+    { url = "https://files.pythonhosted.org/packages/08/0b/677c905f9dd5bc37708694e8f7367659c5382bd011f5dc1d564474032d0b/polars-1.16.0-cp39-abi3-win_amd64.whl", hash = "sha256:17efcb550c42d51034ff79702612b9184d8eac0d500de1dd7fb98490459276d3", size = 35743314 },
+]
+
+[[package]]
 name = "pydantic"
 version = "2.10.3"
 source = { registry = "https://pypi.org/simple" }
@@ -136,19 +149,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pydantic-extra-types"
-version = "2.10.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pydantic" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c3/12/844a4796dbbc814ef0a706f403cb0f3029bf324c2bca2bf0681f4f7d8618/pydantic_extra_types-2.10.1.tar.gz", hash = "sha256:e4f937af34a754b8f1fa228a2fac867091a51f56ed0e8a61d5b3a6719b13c923", size = 85694 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a8/f1/92f7b4711d3d0d08981c2677ec9cdde6cb114205a69814bf803e0be5ae9b/pydantic_extra_types-2.10.1-py3-none-any.whl", hash = "sha256:db2c86c04a837bbac0d2d79bbd6f5d46c4c9253db11ca3fdd36a2b282575f1e2", size = 35155 },
-]
-
-[[package]]
 name = "ruff"
 version = "0.8.2"
 source = { registry = "https://pypi.org/simple" }
@@ -188,8 +188,8 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "click" },
+    { name = "polars" },
     { name = "pydantic" },
-    { name = "pydantic-extra-types" },
 ]
 
 [package.dev-dependencies]
@@ -201,8 +201,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1.7" },
+    { name = "polars", specifier = ">=1.16.0" },
     { name = "pydantic", specifier = ">=2.10.3" },
-    { name = "pydantic-extra-types", specifier = ">=2.10.1" },
 ]
 
 [package.metadata.requires-dev]

@@ -3,11 +3,10 @@
 import logging
 
 import click
+import polars as pl
 
-from messages import RegistrationRequest, RegistrationResponse
+from messages import GetPilotRequest, GetPilotResponse
 from network import broadcast_udp
-
-DISCOVERY_BROADCAST_MESSAGE = RegistrationRequest.new_with_dummy_phone().to_message_bytes()
 
 
 @click.group()
@@ -21,11 +20,25 @@ def main(verbose: bool):
 @main.command(name="list")
 @click.option("-w", "--wait", "wait_time", type=int, default=1)
 def list_lights(wait_time: int) -> None:
-    print("IP Address | MAC Address\n------------------------")
-    for data, (ip_addr, _) in broadcast_udp(DISCOVERY_BROADCAST_MESSAGE, wait_time):
-        response = RegistrationResponse.model_validate_json(data)
-        print(f"{ip_addr:10s} | {response.result.mac}")
+    request_data = GetPilotRequest().to_message_bytes()
+    pilots = (
+        pl.DataFrame(
+            [
+                {"ip": ip_addr} | GetPilotResponse.model_validate_json(data).result.model_dump()
+                for data, (ip_addr, _) in broadcast_udp(request_data, wait_time)
+            ]
+        )
+        .with_columns(
+            rgbcw=pl.format(
+                "{}/{}/{} - {}/{}", pl.col("r"), pl.col("g"), pl.col("b"), pl.col("c"), pl.col("w")
+            )
+        )
+        .drop("r", "g", "b", "c", "w")
+    )
+    print(pilots)
 
 
 if __name__ == "__main__":
+    pl.Config.set_tbl_hide_column_data_types(True)
+    pl.Config.set_tbl_hide_dataframe_shape(True)
     main()

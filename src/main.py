@@ -31,9 +31,22 @@ def list_lights(wait_time: int) -> None:
         .with_columns(
             rgbcw=pl.format(
                 "{}/{}/{} - {}/{}", pl.col("r"), pl.col("g"), pl.col("b"), pl.col("c"), pl.col("w")
+            ),
+            state=pl.col("state").replace_strict({True: "on", False: "off"}),
+        )
+        .select(
+            pl.col(
+                "ip",
+                "mac",
+                "state",
+                "sceneId",
+                "rgbcw",
+                "dimming",
+                "rssi",
             )
         )
-        .drop("r", "g", "b", "c", "w")
+        .fill_null("")
+        .sort("ip")
     )
     print(pilots)
 

@@ -10,10 +10,10 @@ clean-venv:
 
 clean: clean-mypy clean-venv
 
-lint: build
+lint: 
 	uv run ruff check
 	uv run mypy src/
 
 # TEMP 
-list: build
+list: 
 	uv run python src/main.py list

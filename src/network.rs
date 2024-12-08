@@ -130,14 +130,14 @@ impl UdpClient {
             .send_to(&send_data, SocketAddrV4::new(ip, PORT))
             .change_context(NetworkError::FailedUdpSend)?;
 
-        let wait_duration = Duration::from_secs(1);
+        let max_wait_duration = Duration::from_secs(1);
         let start = Instant::now();
         loop {
-            if start.elapsed() >= wait_duration {
+            if start.elapsed() >= max_wait_duration {
                 return error_stack::Result::Err(NetworkError::FailedUdpReceive.into())
                     .attach_printable(format!(
                         "Did not receive a response within {:?}",
-                        wait_duration
+                        max_wait_duration
                     ));
             }
 

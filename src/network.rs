@@ -3,7 +3,7 @@ use std::{
     io,
     net::{Ipv4Addr, SocketAddr, SocketAddrV4, UdpSocket},
     thread::sleep,
-    time::Duration,
+    time::{Duration, Instant},
 };
 use thiserror::Error;
 
@@ -131,31 +131,37 @@ impl UdpClient {
             .change_context(NetworkError::FailedUdpSend)?;
 
         let wait_duration = Duration::from_secs(1);
-        sleep(wait_duration);
+        let start = Instant::now();
+        loop {
+            if start.elapsed() >= wait_duration {
+                return error_stack::Result::Err(NetworkError::FailedUdpReceive.into())
+                    .attach_printable(format!(
+                        "Did not receive a response within {:?}",
+                        wait_duration
+                    ));
+            }
 
-        let datagram = self
-            .recv_from_socket()
-            .map_err(|r| {
-                if r.current_context().kind() == io::ErrorKind::WouldBlock {
-                    io::Error::new(
-                        io::ErrorKind::TimedOut,
-                        format!("Did not receive response after {:?}", wait_duration),
-                    )
-                    .into()
-                } else {
-                    r
+            let datagram_result = self.recv_from_socket();
+            match datagram_result {
+                Ok(datagram) => {
+                    if datagram.source_address().ip() != ip {
+                        return error_stack::Result::Err(
+                            NetworkError::ReceivedMessageFromUnexpectedSource.into(),
+                        )
+                        .attach_printable(format!("sent to {}", ip))
+                        .attach_printable(format!("received from {}", datagram.source_address()));
+                    }
+
+                    return Ok(datagram);
                 }
-            })
-            .change_context(NetworkError::FailedUdpReceive)?;
+                Err(r) => {
+                    if r.current_context().kind() == io::ErrorKind::WouldBlock {
+                        continue;
+                    }
 
-        if datagram.source_address().ip() != ip {
-            return error_stack::Result::Err(
-                NetworkError::ReceivedMessageFromUnexpectedSource.into(),
-            )
-            .attach_printable(format!("sent to {}", ip))
-            .attach_printable(format!("received from {}", datagram.source_address()));
+                    return Err(r).change_context(NetworkError::FailedUdpReceive);
+                }
+            };
         }
-
-        Ok(datagram)
     }
 }

@@ -28,18 +28,6 @@ enum AppError {
     ListLightsError,
 }
 
-fn rssi_to_strength_symbol(rssi: i8) -> String {
-    if rssi < -70 {
-        "\u{2840} ".to_string()
-    } else if rssi < -60 {
-        "\u{28e0} ".to_string()
-    } else if rssi < -50 {
-        "\u{28e0}\u{2846}".to_string()
-    } else {
-        "\u{28e0}\u{28fe}".to_string()
-    }
-}
-
 fn list_lights() -> error_stack::Result<(), AppError> {
     let request = GetPilotRequest::default();
     let request_data = serde_json::to_vec(&request)
@@ -57,12 +45,8 @@ fn list_lights() -> error_stack::Result<(), AppError> {
         "MAC address",
         "state",
         "scene",
-        "dimming",
-        "r",
-        "g",
-        "b",
-        "c",
-        "w",
+        "brightness",
+        "rgbcw",
         "signal",
     ]);
 
@@ -87,12 +71,16 @@ fn list_lights() -> error_stack::Result<(), AppError> {
             },
             result.scene_id().to_string(),
             result.dimming().to_string(),
-            result.r().map(|v| v.to_string()).unwrap_or_default(),
-            result.g().map(|v| v.to_string()).unwrap_or_default(),
-            result.b().map(|v| v.to_string()).unwrap_or_default(),
-            result.c().map(|v| v.to_string()).unwrap_or_default(),
-            result.w().map(|v| v.to_string()).unwrap_or_default(),
-            rssi_to_strength_symbol(*result.rssi()),
+            format!(
+                "({},{},{},{},{})",
+                result.r().map(|v| v.to_string()).unwrap_or_default(),
+                result.g().map(|v| v.to_string()).unwrap_or_default(),
+                result.b().map(|v| v.to_string()).unwrap_or_default(),
+                result.c().map(|v| v.to_string()).unwrap_or_default(),
+                result.w().map(|v| v.to_string()).unwrap_or_default(),
+            )
+            .replace("(,,,,)", ""),
+            result.signal_strength(),
         ]);
     }
 

@@ -10,6 +10,18 @@ use thiserror::Error;
 use derive_getters::Getters;
 use error_stack::ResultExt;
 
+pub fn rssi_to_signal_strength(rssi: i8) -> String {
+    if rssi < -70 {
+        "\u{2840} ".to_string()
+    } else if rssi < -60 {
+        "\u{28e0} ".to_string()
+    } else if rssi < -50 {
+        "\u{28e0}\u{2846}".to_string()
+    } else {
+        "\u{28e0}\u{28fe}".to_string()
+    }
+}
+
 #[derive(Debug, Getters)]
 pub struct Datagram {
     data: Vec<u8>,

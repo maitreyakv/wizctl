@@ -4,6 +4,8 @@ use macaddr::MacAddr6;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 
+use crate::network::rssi_to_signal_strength;
+
 #[derive(Serialize, Debug)]
 pub struct GetPilotRequest {
     method: String,
@@ -41,6 +43,12 @@ pub struct GetPilotResponseResult {
     c: Option<u8>,
     w: Option<u8>,
     dimming: u8,
+}
+
+impl GetPilotResponseResult {
+    pub fn signal_strength(&self) -> String {
+        rssi_to_signal_strength(*self.rssi())
+    }
 }
 
 #[derive(Deserialize, Debug, Getters)]

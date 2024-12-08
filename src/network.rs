@@ -22,7 +22,7 @@ pub fn rssi_to_signal_strength(rssi: i8) -> String {
     }
 }
 
-#[derive(Debug, Getters)]
+#[derive(Debug, Getters, Clone)]
 pub struct Datagram {
     data: Vec<u8>,
     source_address: SocketAddr,
@@ -42,7 +42,16 @@ pub enum NetworkError {
     ReceivedMessageFromUnexpectedSource,
 }
 
-fn recv_from_socket(socket: &UdpSocket) -> error_stack::Result<(Vec<u8>, SocketAddr), io::Error> {
+fn setup_socket(bind_address: SocketAddrV4, broadcast: bool) -> io::Result<UdpSocket> {
+    let socket = UdpSocket::bind(bind_address)?;
+    if broadcast {
+        socket.set_broadcast(true)?;
+    }
+    socket.set_nonblocking(true)?;
+    Ok(socket)
+}
+
+fn recv_from_socket(socket: &UdpSocket) -> error_stack::Result<Datagram, io::Error> {
     let mut buf = [0; 256];
     let (n_bytes, source_address) = socket.recv_from(&mut buf)?;
     if n_bytes == buf.len() {
@@ -57,7 +66,11 @@ fn recv_from_socket(socket: &UdpSocket) -> error_stack::Result<(Vec<u8>, SocketA
         .attach_printable(format!("received message size is {}", n_bytes));
     }
     let data = buf[0..n_bytes].to_vec();
-    Ok((data, source_address))
+
+    Ok(Datagram {
+        data,
+        source_address,
+    })
 }
 
 pub fn broadcast_udp_and_receive_responses(
@@ -66,13 +79,7 @@ pub fn broadcast_udp_and_receive_responses(
 ) -> error_stack::Result<Vec<Datagram>, NetworkError> {
     let bind_address = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port);
     let socket =
-        UdpSocket::bind(bind_address).change_context(NetworkError::FailedUdpSocketSetup)?;
-    socket
-        .set_broadcast(true)
-        .change_context(NetworkError::FailedUdpSocketSetup)?;
-    socket
-        .set_nonblocking(true)
-        .change_context(NetworkError::FailedUdpSocketSetup)?;
+        setup_socket(bind_address, true).change_context(NetworkError::FailedUdpSocketSetup)?;
 
     let broadcast_address = SocketAddrV4::new(Ipv4Addr::BROADCAST, port);
     socket
@@ -85,15 +92,12 @@ pub fn broadcast_udp_and_receive_responses(
 
     loop {
         match recv_from_socket(&socket) {
-            Ok((data, source_address)) => {
-                if data == broadcast_data {
+            Ok(datagram) => {
+                if *datagram.data() == broadcast_data {
                     continue;
                 }
 
-                datagrams.push(Datagram {
-                    data,
-                    source_address,
-                });
+                datagrams.push(datagram);
             }
             Err(ref r) if r.current_context().kind() == io::ErrorKind::WouldBlock => {
                 break;
@@ -113,23 +117,34 @@ pub fn send_udp_and_receive_response(
 ) -> error_stack::Result<Datagram, NetworkError> {
     let bind_address = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, send_address.port());
     let socket =
-        UdpSocket::bind(bind_address).change_context(NetworkError::FailedUdpSocketSetup)?;
+        setup_socket(bind_address, false).change_context(NetworkError::FailedUdpSocketSetup)?;
 
     socket
         .send_to(&send_data, send_address)
         .change_context(NetworkError::FailedUdpSend)?;
 
-    let (data, source_address) =
-        recv_from_socket(&socket).change_context(NetworkError::FailedUdpReceive)?;
+    let wait_duration = Duration::from_secs(1);
+    sleep(wait_duration);
 
-    if source_address != send_address.into() {
+    let datagram = recv_from_socket(&socket)
+        .map_err(|r| {
+            if r.current_context().kind() == io::ErrorKind::WouldBlock {
+                io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    format!("Did not receive response after {:?}", wait_duration),
+                )
+                .into()
+            } else {
+                r
+            }
+        })
+        .change_context(NetworkError::FailedUdpReceive)?;
+
+    if *datagram.source_address() != send_address.into() {
         return error_stack::Result::Err(NetworkError::ReceivedMessageFromUnexpectedSource.into())
             .attach_printable(format!("sent to {}", send_address))
-            .attach_printable(format!("received from {}", source_address));
+            .attach_printable(format!("received from {}", datagram.source_address()));
     }
 
-    Ok(Datagram {
-        data,
-        source_address,
-    })
+    Ok(datagram)
 }

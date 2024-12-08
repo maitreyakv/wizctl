@@ -134,6 +134,7 @@ fn turn_on_light(ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
             .attach_printable("Received \"success = false\" from light!");
     }
 
+    println!("turned on light at {}", ip);
     Ok(())
 }
 

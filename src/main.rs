@@ -24,7 +24,7 @@ enum Commands {
 
 #[derive(Error, Debug)]
 enum AppError {
-    #[error("Could not fetch status of lights")]
+    #[error("Could not complete list operation!")]
     ListLightsError,
 }
 
@@ -47,7 +47,7 @@ fn list_lights() -> error_stack::Result<(), AppError> {
         .change_context(AppError::ListLightsError)?;
 
     let mut datagrams = broadcast_udp(request_data, 38899)
-        .attach_printable("Could not broadcast getPilot UDP request!")
+        .attach_printable("Could not broadcast getPilot UDP request and/or receive responses!")
         .change_context(AppError::ListLightsError)?;
     datagrams.sort_by_key(|d| *d.source_address());
 

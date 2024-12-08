@@ -39,11 +39,11 @@ enum Commands {
 enum AppError {
     #[error("Could not list lights!")]
     ListLights,
-    //#[error("Cound not describe light!")]
+    //#[error("Could not describe light!")]
     //DescribeLight,
-    #[error("Cound not turn on light!")]
+    #[error("Could not turn on light!")]
     TurnLightOn,
-    #[error("Cound not turn off light!")]
+    #[error("Could not turn off light!")]
     TurnLightOff,
 }
 

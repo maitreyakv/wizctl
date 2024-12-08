@@ -32,7 +32,7 @@ pub struct Datagram {
 #[error("Could not complete UDP operation!")]
 pub struct UdpError {}
 
-pub fn broadcast_udp(
+pub fn broadcast_udp_and_receive_responses(
     broadcast_data: Vec<u8>,
     port: u16,
 ) -> error_stack::Result<Vec<Datagram>, UdpError> {
@@ -63,7 +63,6 @@ pub fn broadcast_udp(
         let mut buf = [0; 256];
         match socket.recv_from(&mut buf) {
             Ok((n_bytes, source_address)) => {
-                // TODO: check for buffer overflow
                 if n_bytes == buf.len() {
                     return error_stack::Result::Err(error_stack::Report::new(UdpError::default()))
                         .attach_printable("Received message was too large for buffer!");
@@ -91,4 +90,39 @@ pub fn broadcast_udp(
     }
 
     Ok(datagrams)
+}
+
+pub fn send_udp_and_receive_response(
+    send_data: Vec<u8>,
+    send_address: SocketAddrV4,
+) -> error_stack::Result<Datagram, UdpError> {
+    let bind_address = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, send_address.port());
+    let socket = UdpSocket::bind(bind_address)
+        .attach_printable("Could not bind socket!")
+        .change_context(UdpError::default())?;
+
+    socket
+        .send_to(&send_data, send_address)
+        .attach_printable("Could not send message!")
+        .change_context(UdpError::default())?;
+
+    let mut buf = [0; 128];
+    let (n_bytes, source_address) = socket
+        .recv_from(&mut buf)
+        .attach_printable("Could not receive response message!")
+        .change_context(UdpError::default())?;
+
+    // TODO: Check if response came from expected address
+
+    if n_bytes == buf.len() {
+        return error_stack::Result::Err(error_stack::Report::new(UdpError::default()))
+            .attach_printable("Received message was too large for buffer!");
+    }
+
+    let data = buf[0..n_bytes].to_vec();
+
+    Ok(Datagram {
+        data,
+        source_address,
+    })
 }

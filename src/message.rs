@@ -57,3 +57,42 @@ pub struct GetPilotResponse {
     env: String,
     result: GetPilotResponseResult,
 }
+
+#[derive(Serialize, Debug)]
+struct SetPilotRequestParams {
+    state: bool,
+}
+
+#[derive(Serialize, Debug)]
+pub struct SetPilotRequest {
+    method: String,
+    params: SetPilotRequestParams,
+}
+
+impl SetPilotRequest {
+    pub fn on() -> Self {
+        Self {
+            method: "setPilot".to_string(),
+            params: SetPilotRequestParams { state: true },
+        }
+    }
+
+    pub fn off() -> Self {
+        Self {
+            method: "setPilot".to_string(),
+            params: SetPilotRequestParams { state: false },
+        }
+    }
+}
+
+#[derive(Deserialize, Debug, Getters)]
+pub struct SetPilotResponseResult {
+    success: bool,
+}
+
+#[derive(Deserialize, Debug, Getters)]
+pub struct SetPilotResponse {
+    method: String,
+    env: String,
+    result: SetPilotResponseResult,
+}

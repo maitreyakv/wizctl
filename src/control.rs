@@ -1,9 +1,9 @@
 /// High level control of WiZ Connected devices
-use std::net::{Ipv4Addr, SocketAddrV4};
+use std::net::Ipv4Addr;
 use std::str;
 
 use crate::message::SetPilotResponse;
-use crate::{message::SetPilotRequest, network::send_udp_and_receive_response};
+use crate::{message::SetPilotRequest, network::UdpClient};
 use error_stack::ResultExt;
 use thiserror::Error;
 
@@ -17,7 +17,9 @@ pub fn set_pilot(
 ) -> error_stack::Result<(), SetPilotError> {
     let request_data = serde_json::to_vec(&request).change_context(SetPilotError)?;
 
-    let datagram = send_udp_and_receive_response(request_data, SocketAddrV4::new(*ip, 38899))
+    let client = UdpClient::new(false).change_context(SetPilotError)?;
+    let datagram = client
+        .send_udp_and_receive_response(request_data, *ip)
         .change_context(SetPilotError)?;
 
     let decoded_data = str::from_utf8(datagram.data())

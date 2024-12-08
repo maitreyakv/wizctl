@@ -9,7 +9,7 @@ use thiserror::Error;
 use wizctl::{
     control::set_pilot,
     message::{GetPilotRequest, GetPilotResponse, SetPilotRequest},
-    network::broadcast_udp_and_receive_responses,
+    network::UdpClient,
 };
 
 #[derive(Parser)]
@@ -53,7 +53,9 @@ fn list_lights() -> error_stack::Result<(), AppError> {
         .attach_printable("Could not serialize getPilot request to JSON!")
         .change_context(AppError::ListLights)?;
 
-    let mut datagrams = broadcast_udp_and_receive_responses(request_data, 38899)
+    let client = UdpClient::new(true).change_context(AppError::ListLights)?;
+    let mut datagrams = client
+        .broadcast_udp_and_receive_responses(request_data)
         .attach_printable("Could not broadcast getPilot UDP request and/or receive responses!")
         .change_context(AppError::ListLights)?;
     datagrams.sort_by_key(|d| *d.source_address());

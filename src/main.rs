@@ -1,15 +1,15 @@
 /// CLI tool for controlling WiZ Connected devices
-use std::net::{Ipv4Addr, SocketAddrV4};
+use std::net::Ipv4Addr;
 use std::str;
 
 use clap::{Parser, Subcommand};
 use error_stack::ResultExt;
 use tabled::{builder::Builder, settings::Style};
 use thiserror::Error;
-use wizctl::message::SetPilotResponse;
 use wizctl::{
+    control::set_pilot,
     message::{GetPilotRequest, GetPilotResponse, SetPilotRequest},
-    network::{broadcast_udp_and_receive_responses, send_udp_and_receive_response},
+    network::broadcast_udp_and_receive_responses,
 };
 
 #[derive(Parser)]
@@ -115,50 +115,15 @@ fn describe_light(_ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
 
 fn turn_on_light(ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
     let request = SetPilotRequest::on();
-    let request_data = serde_json::to_vec(&request)
-        .attach_printable("Could not serialize setPilot request to JSON!")
-        .change_context(AppError::TurnLightOn)?;
-
-    let datagram = send_udp_and_receive_response(request_data, SocketAddrV4::new(ip, 38899))
-        .change_context(AppError::TurnLightOn)?;
-
-    let decoded_data = str::from_utf8(datagram.data())
-        .attach_printable("Could not decode datagram data to JSON string!")
-        .change_context(AppError::TurnLightOn)?;
-    let response: SetPilotResponse = serde_json::from_str(decoded_data)
-        .attach_printable("Could not deserialize setPilot response data!")
-        .change_context(AppError::TurnLightOn)?;
-    let result = response.result();
-    if !result.success() {
-        return error_stack::Result::Err(AppError::TurnLightOn.into())
-            .attach_printable("Received \"success = false\" from light!");
-    }
-
+    set_pilot(&ip, request).change_context(AppError::TurnLightOn)?;
     println!("turned on light at {}", ip);
     Ok(())
 }
 
 fn turn_off_light(ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
     let request = SetPilotRequest::off();
-    let request_data = serde_json::to_vec(&request)
-        .attach_printable("Could not serialize setPilot request to JSON!")
-        .change_context(AppError::TurnLightOff)?;
-
-    let datagram = send_udp_and_receive_response(request_data, SocketAddrV4::new(ip, 38899))
-        .change_context(AppError::TurnLightOff)?;
-
-    let decoded_data = str::from_utf8(datagram.data())
-        .attach_printable("Could not decode datagram data to JSON string!")
-        .change_context(AppError::TurnLightOff)?;
-    let response: SetPilotResponse = serde_json::from_str(decoded_data)
-        .attach_printable("Could not deserialize setPilot response data!")
-        .change_context(AppError::TurnLightOff)?;
-    let result = response.result();
-    if !result.success() {
-        return error_stack::Result::Err(AppError::TurnLightOff.into())
-            .attach_printable("Received \"success = false\" from light!");
-    }
-
+    set_pilot(&ip, request).change_context(AppError::TurnLightOff)?;
+    println!("turned off light at {}", ip);
     Ok(())
 }
 

@@ -66,7 +66,7 @@ impl FromStr for RGBCW {
         }
 
         Ok(RGBCW {
-            r: *numbers.get(0).unwrap(),
+            r: *numbers.first().unwrap(),
             g: *numbers.get(1).unwrap(),
             b: *numbers.get(2).unwrap(),
             c: *numbers.get(3).unwrap(),

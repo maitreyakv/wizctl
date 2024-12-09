@@ -7,6 +7,7 @@ use error_stack::ResultExt;
 use tabled::{builder::Builder, settings::Style};
 use thiserror::Error;
 use wizctl::{
+    color::RGBCW,
     control::set_pilot,
     message::{GetPilotRequest, GetPilotResponse, SetPilotRequest},
     network::UdpClient,
@@ -33,18 +34,26 @@ enum Commands {
         #[clap(help = "Local IP address of the light to turn off")]
         ip: Ipv4Addr,
     },
+    Color {
+        #[clap(help = "Local IP address of the light to change color")]
+        ip: Ipv4Addr,
+        #[clap(help = "Color provided as RGBCW, e.g. 255,255,255,255,255")]
+        rgbcw: RGBCW,
+    },
 }
 
 #[derive(Error, Debug)]
 enum AppError {
     #[error("Could not list lights!")]
     ListLights,
-    //#[error("Could not describe light!")]
-    //DescribeLight,
+    #[error("Could not describe light!")]
+    DescribeLight,
     #[error("Could not turn on light!")]
     TurnLightOn,
     #[error("Could not turn off light!")]
     TurnLightOff,
+    #[error("Could not change color!")]
+    SetColor,
 }
 
 fn list_lights() -> error_stack::Result<(), AppError> {
@@ -111,7 +120,7 @@ fn list_lights() -> error_stack::Result<(), AppError> {
     Ok(())
 }
 
-fn describe_light(_ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
+fn describe_light(ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
     unimplemented!();
 }
 
@@ -129,6 +138,13 @@ fn turn_off_light(ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
     Ok(())
 }
 
+fn set_color(ip: Ipv4Addr, rgbcw: &RGBCW) -> error_stack::Result<(), AppError> {
+    let request = SetPilotRequest::color(rgbcw);
+    set_pilot(&ip, request).change_context(AppError::SetColor)?;
+    println!("set color to {} for {}", rgbcw, ip);
+    Ok(())
+}
+
 fn main() -> error_stack::Result<(), AppError> {
     let cli = Cli::parse();
 
@@ -137,5 +153,6 @@ fn main() -> error_stack::Result<(), AppError> {
         Commands::Describe { ip } => describe_light(*ip),
         Commands::On { ip } => turn_on_light(*ip),
         Commands::Off { ip } => turn_off_light(*ip),
+        Commands::Color { ip, rgbcw } => set_color(*ip, rgbcw),
     }
 }

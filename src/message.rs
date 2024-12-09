@@ -1,10 +1,11 @@
 /// Data model for WiZ UDP messages
 use derive_getters::Getters;
+use derive_setters::Setters;
 use macaddr::MacAddr6;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 
-use crate::network::rssi_to_signal_strength;
+use crate::{color::RGBCW, network::rssi_to_signal_strength};
 
 #[derive(Serialize, Debug)]
 pub struct GetPilotRequest {
@@ -58,9 +59,20 @@ pub struct GetPilotResponse {
     result: GetPilotResponseResult,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Default, Setters)]
 struct SetPilotRequestParams {
-    state: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    state: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    r: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    g: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    b: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    c: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    w: Option<u8>,
 }
 
 #[derive(Serialize, Debug)]
@@ -73,14 +85,26 @@ impl SetPilotRequest {
     pub fn on() -> Self {
         Self {
             method: "setPilot".to_string(),
-            params: SetPilotRequestParams { state: true },
+            params: SetPilotRequestParams::default().state(Some(true)),
         }
     }
 
     pub fn off() -> Self {
         Self {
             method: "setPilot".to_string(),
-            params: SetPilotRequestParams { state: false },
+            params: SetPilotRequestParams::default().state(Some(false)),
+        }
+    }
+
+    pub fn color(rgbcw: &RGBCW) -> Self {
+        Self {
+            method: "setPilot".to_string(),
+            params: SetPilotRequestParams::default()
+                .r(Some(*rgbcw.r()))
+                .g(Some(*rgbcw.g()))
+                .b(Some(*rgbcw.b()))
+                .c(Some(*rgbcw.c()))
+                .w(Some(*rgbcw.w())),
         }
     }
 }

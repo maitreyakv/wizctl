@@ -1,4 +1,3 @@
-/// CLI tool for controlling WiZ Connected devices
 use std::net::Ipv4Addr;
 use std::str;
 
@@ -8,8 +7,11 @@ use tabled::{builder::Builder, settings::Style};
 use thiserror::Error;
 use wizctl::{
     color::RGBCW,
-    control::set_pilot,
-    message::{GetPilotRequest, GetPilotResponse, SetPilotRequest},
+    control::{describe, set_pilot},
+    messages::{
+        get_pilot::{GetPilotRequest, GetPilotResponse},
+        set_pilot::SetPilotRequest,
+    },
     network::UdpClient,
 };
 
@@ -121,7 +123,7 @@ fn list_lights() -> error_stack::Result<(), AppError> {
 }
 
 fn describe_light(ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
-    unimplemented!();
+    describe(&ip).change_context(AppError::DescribeLight)
 }
 
 fn turn_on_light(ip: Ipv4Addr) -> error_stack::Result<(), AppError> {

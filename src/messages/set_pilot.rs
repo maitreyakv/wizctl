@@ -18,6 +18,8 @@ struct SetPilotRequestParams {
     c: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
     w: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    dimming: Option<u8>,
 }
 
 #[derive(Serialize, Debug)]
@@ -51,6 +53,11 @@ impl SetPilotRequest {
                 .c(Some(*rgbcw.c()))
                 .w(Some(*rgbcw.w())),
         }
+    }
+
+    pub fn brightness(mut self, value: u8) -> Self {
+        self.params = self.params.dimming(Some(value));
+        self
     }
 }
 

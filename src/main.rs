@@ -7,7 +7,7 @@ use tabled::{builder::Builder, settings::Style};
 use thiserror::Error;
 use wizctl::{
     color::RGBCW,
-    control::{describe, set_pilot},
+    control::{describe, perform_speedtest, set_pilot},
     messages::{
         get_pilot::{GetPilotRequest, GetPilotResponse},
         set_pilot::SetPilotRequest,
@@ -42,6 +42,10 @@ enum Commands {
         #[clap(help = "Color provided as RGBCW, e.g. 255,255,255,255,255")]
         rgbcw: RGBCW,
     },
+    Speedtest {
+        #[clap(help = "Local IP address of the light to test")]
+        ip: Ipv4Addr,
+    },
 }
 
 #[derive(Error, Debug)]
@@ -56,6 +60,8 @@ enum AppError {
     TurnLightOff,
     #[error("Could not change color!")]
     SetColor,
+    #[error("Could not perform speed test!")]
+    Speedtest,
 }
 
 fn list_lights() -> error_stack::Result<(), AppError> {
@@ -147,6 +153,12 @@ fn set_color(ip: Ipv4Addr, rgbcw: &RGBCW) -> error_stack::Result<(), AppError> {
     Ok(())
 }
 
+fn speedtest(ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
+    perform_speedtest(&ip).change_context(AppError::Speedtest)?;
+
+    Ok(())
+}
+
 fn main() -> error_stack::Result<(), AppError> {
     let cli = Cli::parse();
 
@@ -156,5 +168,6 @@ fn main() -> error_stack::Result<(), AppError> {
         Commands::On { ip } => turn_on_light(*ip),
         Commands::Off { ip } => turn_off_light(*ip),
         Commands::Color { ip, rgbcw } => set_color(*ip, rgbcw),
+        Commands::Speedtest { ip } => speedtest(*ip),
     }
 }

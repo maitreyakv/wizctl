@@ -22,6 +22,9 @@ pub struct RGBCW {
 }
 
 impl RGBCW {
+    pub fn new(r: u8, g: u8, b: u8, c: u8, w: u8) -> Self {
+        Self { r, g, b, c, w }
+    }
     pub fn white() -> Self {
         Self {
             r: 255,

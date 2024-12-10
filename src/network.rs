@@ -123,11 +123,11 @@ impl UdpClient {
 
     pub fn send_udp_and_receive_response(
         &self,
-        send_data: &Vec<u8>,
+        send_data: &[u8],
         ip: &Ipv4Addr,
     ) -> error_stack::Result<Datagram, NetworkError> {
         self.socket
-            .send_to(&send_data, SocketAddrV4::new(*ip, PORT))
+            .send_to(send_data, SocketAddrV4::new(*ip, PORT))
             .change_context(NetworkError::FailedUdpSend)?;
 
         let max_wait_duration = Duration::from_secs(1);

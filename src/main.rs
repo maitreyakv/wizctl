@@ -157,7 +157,7 @@ fn set_light(
     };
 
     pilot = match rgbcw {
-        Some(s) => pilot.rgbcw(RGBCW::from_str(&s).change_context(AppError::FailedToSetLight)?),
+        Some(s) => pilot.rgbcw(RGBCW::from_str(s).change_context(AppError::FailedToSetLight)?),
         None => pilot,
     };
 

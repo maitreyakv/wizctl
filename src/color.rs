@@ -1,8 +1,7 @@
+use derive_getters::Getters;
 use regex::Regex;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
-
-use ::derive_getters::Getters;
 
 #[derive(Error, Debug)]
 pub enum ColorError {
@@ -12,7 +11,7 @@ pub enum ColorError {
     InsufficientComponentsForRGBCW(usize),
 }
 
-#[derive(Clone, Getters)]
+#[derive(Clone, Default, Debug, Getters)]
 pub struct RGBCW {
     r: u8,
     g: u8,
@@ -22,9 +21,6 @@ pub struct RGBCW {
 }
 
 impl RGBCW {
-    pub fn new(r: u8, g: u8, b: u8, c: u8, w: u8) -> Self {
-        Self { r, g, b, c, w }
-    }
     pub fn white() -> Self {
         Self {
             r: 255,
@@ -41,11 +37,7 @@ impl Display for RGBCW {
         write!(
             f,
             "({},{},{},{},{})",
-            self.r(),
-            self.g(),
-            self.b(),
-            self.c(),
-            self.w()
+            self.r, self.g, self.b, self.c, self.w
         )
     }
 }

@@ -7,13 +7,12 @@ use tabled::{builder::Builder, settings::Style};
 use thiserror::Error;
 use wizctl::{
     color::RGBCW,
-    control::{describe, perform_speedtest, set_pilot},
-    messages::{
-        get_pilot::{GetPilotRequest, GetPilotResponse},
-        set_pilot::SetPilotRequest,
-    },
+    control::{describe, perform_speedtest, set_pilot, Pilot},
+    messages::get_pilot::{GetPilotRequest, GetPilotResponse},
     network::UdpClient,
 };
+
+use ::std::str::FromStr;
 
 #[derive(Parser)]
 struct Cli {
@@ -28,19 +27,31 @@ enum Commands {
         #[clap(help = "Local IP address of the light to describe")]
         ip: Ipv4Addr,
     },
-    On {
+    Set {
         #[clap(help = "Local IP address of the light to turn on")]
         ip: Ipv4Addr,
-    },
-    Off {
-        #[clap(help = "Local IP address of the light to turn off")]
-        ip: Ipv4Addr,
-    },
-    Color {
-        #[clap(help = "Local IP address of the light to change color")]
-        ip: Ipv4Addr,
-        #[clap(help = "Color provided as RGBCW, e.g. 255,255,255,255,255")]
-        rgbcw: RGBCW,
+        #[clap(
+            help = "Turns the light on",
+            long,
+            required = false,
+            conflicts_with = "off"
+        )]
+        on: bool,
+        #[clap(
+            help = "Turns the light off",
+            long,
+            required = false,
+            conflicts_with = "on"
+        )]
+        off: bool,
+        #[clap(
+            help = "RGBCW color of the light, e.g. --rgb 255,255,255,0,0",
+            long,
+            required = false
+        )]
+        rgbcw: Option<String>,
+        #[clap(help = "Brightness of the light [0,255]", long, required = false)]
+        brightness: Option<u8>,
     },
     Speedtest {
         #[clap(help = "Local IP address of the light to test")]
@@ -54,12 +65,8 @@ enum AppError {
     ListLights,
     #[error("Could not describe light!")]
     DescribeLight,
-    #[error("Could not turn on light!")]
-    TurnLightOn,
-    #[error("Could not turn off light!")]
-    TurnLightOff,
-    #[error("Could not change color!")]
-    SetColor,
+    #[error("Could not set light!")]
+    FailedToSetLight,
     #[error("Could not perform speed test!")]
     Speedtest,
 }
@@ -132,31 +139,38 @@ fn describe_light(ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
     describe(&ip).change_context(AppError::DescribeLight)
 }
 
-fn turn_on_light(ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
-    let request = SetPilotRequest::on();
-    set_pilot(&ip, request).change_context(AppError::TurnLightOn)?;
-    println!("turned on light at {}", ip);
-    Ok(())
-}
+fn set_light(
+    ip: &Ipv4Addr,
+    on: &bool,
+    off: &bool,
+    rgbcw: &Option<String>,
+    brightness: &Option<u8>,
+) -> error_stack::Result<(), AppError> {
+    let mut pilot = Pilot::default();
 
-fn turn_off_light(ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
-    let request = SetPilotRequest::off();
-    set_pilot(&ip, request).change_context(AppError::TurnLightOff)?;
-    println!("turned off light at {}", ip);
-    Ok(())
-}
+    pilot = if *on {
+        pilot.on()
+    } else if *off {
+        pilot.off()
+    } else {
+        pilot
+    };
 
-fn set_color(ip: Ipv4Addr, rgbcw: &RGBCW) -> error_stack::Result<(), AppError> {
-    let request = SetPilotRequest::color(rgbcw);
-    set_pilot(&ip, request).change_context(AppError::SetColor)?;
-    println!("set color to {} for {}", rgbcw, ip);
-    Ok(())
+    pilot = match rgbcw {
+        Some(s) => pilot.rgbcw(RGBCW::from_str(&s).change_context(AppError::FailedToSetLight)?),
+        None => pilot,
+    };
+
+    pilot = match brightness {
+        Some(b) => pilot.brightness(*b),
+        None => pilot,
+    };
+
+    set_pilot(ip, pilot).change_context(AppError::FailedToSetLight)
 }
 
 fn speedtest(ip: Ipv4Addr) -> error_stack::Result<(), AppError> {
-    perform_speedtest(&ip).change_context(AppError::Speedtest)?;
-
-    Ok(())
+    perform_speedtest(&ip).change_context(AppError::Speedtest)
 }
 
 fn main() -> error_stack::Result<(), AppError> {
@@ -165,9 +179,13 @@ fn main() -> error_stack::Result<(), AppError> {
     match &cli.command {
         Commands::List => list_lights(),
         Commands::Describe { ip } => describe_light(*ip),
-        Commands::On { ip } => turn_on_light(*ip),
-        Commands::Off { ip } => turn_off_light(*ip),
-        Commands::Color { ip, rgbcw } => set_color(*ip, rgbcw),
+        Commands::Set {
+            ip,
+            on,
+            off,
+            rgbcw,
+            brightness,
+        } => set_light(ip, on, off, rgbcw, brightness),
         Commands::Speedtest { ip } => speedtest(*ip),
     }
 }

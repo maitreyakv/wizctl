@@ -1,6 +1,5 @@
 use error_stack::ResultExt;
 use serde::{Deserialize, Serialize};
-use std::f32::consts::PI;
 use std::str;
 use std::time::Duration;
 use std::{net::Ipv4Addr, time::Instant};
@@ -11,7 +10,7 @@ use crate::{
     messages::{
         get_pilot::{GetPilotRequest, GetPilotResponse},
         get_system_config::{GetSystemConfigRequest, GetSystemConfigResponse},
-        set_pilot::{SetPilotRequest, SetPilotResponse},
+        set_pilot::{SetPilotRequest, SetPilotRequestParams, SetPilotResponse},
     },
     network::UdpClient,
 };
@@ -42,7 +41,53 @@ where
         .attach_printable("Could not deserialize response data!")
 }
 
-pub fn set_pilot(ip: &Ipv4Addr, request: SetPilotRequest) -> error_stack::Result<(), ControlError> {
+#[derive(Debug, Default)]
+pub struct Pilot {
+    state: Option<bool>,
+    rgbcw: Option<RGBCW>,
+    dimming: Option<u8>,
+}
+
+impl Pilot {
+    pub fn on(mut self) -> Self {
+        self.state = Some(true);
+        self
+    }
+
+    pub fn off(mut self) -> Self {
+        self.state = Some(false);
+        self
+    }
+
+    pub fn rgbcw(mut self, rgbcw: RGBCW) -> Self {
+        self.rgbcw = Some(rgbcw);
+        self
+    }
+
+    pub fn brightness(mut self, brightness: u8) -> Self {
+        self.dimming = Some(brightness);
+        self
+    }
+
+    fn build_request(&self) -> SetPilotRequest {
+        let mut params = SetPilotRequestParams::default().state(self.state);
+
+        params = match &self.rgbcw {
+            Some(rgbcw) => params
+                .r(Some(*rgbcw.r()))
+                .g(Some(*rgbcw.g()))
+                .b(Some(*rgbcw.b()))
+                .c(Some(*rgbcw.c()))
+                .w(Some(*rgbcw.w())),
+            None => params,
+        };
+
+        SetPilotRequest::default().params(params)
+    }
+}
+
+pub fn set_pilot(ip: &Ipv4Addr, pilot: Pilot) -> error_stack::Result<(), ControlError> {
+    let request = pilot.build_request();
     let response: SetPilotResponse = send_request_and_parse_response(ip, request)?;
     let result = response.result();
     if !result.success() {
@@ -67,8 +112,6 @@ pub fn describe(ip: &Ipv4Addr) -> error_stack::Result<(), ControlError> {
     Ok(())
 }
 
-const TWO_PI: f32 = 2.0 * PI;
-
 pub fn perform_speedtest(ip: &Ipv4Addr) -> error_stack::Result<(), ControlError> {
     let client = UdpClient::new(false).change_context(ControlError)?;
 
@@ -76,13 +119,10 @@ pub fn perform_speedtest(ip: &Ipv4Addr) -> error_stack::Result<(), ControlError>
     let mut total_bytes_sent: usize = 0;
     let mut total_bytes_received: usize = 0;
 
-    let test_duration = Duration::from_secs(60);
+    let test_duration = Duration::from_secs(10);
     let start = Instant::now();
     while start.elapsed() < test_duration {
-        let t = start.elapsed().as_secs_f32();
-        let b = 127.0 * (TWO_PI * t / 10.0).cos() + 127.0;
-
-        let request = SetPilotRequest::color(&RGBCW::white()).brightness(b as u8);
+        let request = Pilot::default().on().rgbcw(RGBCW::white()).build_request();
         let request_data = serde_json::to_vec(&request).change_context(ControlError)?;
         let datagram = client
             .send_udp_and_receive_response(&request_data, ip)
@@ -107,7 +147,7 @@ pub fn perform_speedtest(ip: &Ipv4Addr) -> error_stack::Result<(), ControlError>
     println!(
         "Received {} bytes of response data ({:.2} kB/s)",
         total_bytes_received,
-        total_bytes_received as f32 / test_duration.as_secs_f32() / 1000.0
+        total_bytes_received as f32 / test_duration.as_secs_f32() / 1_000.0
     );
 
     Ok(())

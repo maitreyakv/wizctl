@@ -2,10 +2,8 @@ use derive_getters::Getters;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::color::RGBCW;
-
 #[derive(Serialize, Debug, Default, Setters)]
-struct SetPilotRequestParams {
+pub struct SetPilotRequestParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     state: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -22,42 +20,18 @@ struct SetPilotRequestParams {
     dimming: Option<u8>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Setters)]
 pub struct SetPilotRequest {
     method: String,
     params: SetPilotRequestParams,
 }
 
-impl SetPilotRequest {
-    pub fn on() -> Self {
+impl Default for SetPilotRequest {
+    fn default() -> Self {
         Self {
             method: "setPilot".to_string(),
-            params: SetPilotRequestParams::default().state(Some(true)),
+            params: SetPilotRequestParams::default(),
         }
-    }
-
-    pub fn off() -> Self {
-        Self {
-            method: "setPilot".to_string(),
-            params: SetPilotRequestParams::default().state(Some(false)),
-        }
-    }
-
-    pub fn color(rgbcw: &RGBCW) -> Self {
-        Self {
-            method: "setPilot".to_string(),
-            params: SetPilotRequestParams::default()
-                .r(Some(*rgbcw.r()))
-                .g(Some(*rgbcw.g()))
-                .b(Some(*rgbcw.b()))
-                .c(Some(*rgbcw.c()))
-                .w(Some(*rgbcw.w())),
-        }
-    }
-
-    pub fn brightness(mut self, value: u8) -> Self {
-        self.params = self.params.dimming(Some(value));
-        self
     }
 }
 

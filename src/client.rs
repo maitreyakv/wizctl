@@ -8,7 +8,6 @@ use messages::{
     set_pilot::{SetPilotRequest, SetPilotResponse},
 };
 use network::{broadcast_udp_and_receive_responses, init_socket, send_udp_and_receive_response};
-use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 use std::str;
 
@@ -39,23 +38,18 @@ impl Client {
     }
 
     pub fn turn_light_on(&self, ip: &IpAddr) -> Result<()> {
-        let socket = init_socket(false, 38899)?;
-        let send_data = serde_json::to_vec(&SetPilotRequest::on())?;
-        let datagram = send_udp_and_receive_response(&socket, &send_data, ip, 38899)?;
-        let response_json = str::from_utf8(datagram.data())?;
-        let _response: SetPilotResponse =
-            serde_json::from_str(response_json).context(response_json.to_string())?;
-        // TODO: Check success
-        Ok(())
+        self.send_set_pilot(ip, SetPilotRequest::on())
     }
 
     pub fn turn_light_off(&self, ip: &IpAddr) -> Result<()> {
+        self.send_set_pilot(ip, SetPilotRequest::off())
+    }
+
+    fn send_set_pilot(&self, ip: &IpAddr, request: SetPilotRequest) -> Result<()> {
         let socket = init_socket(false, 38899)?;
-        let send_data = serde_json::to_vec(&SetPilotRequest::off())?;
+        let send_data = serde_json::to_vec(&request)?;
         let datagram = send_udp_and_receive_response(&socket, &send_data, ip, 38899)?;
-        let response_json = str::from_utf8(datagram.data())?;
-        let _response: SetPilotResponse =
-            serde_json::from_str(response_json).context(response_json.to_string())?;
+        let response: SetPilotResponse = serde_json::from_slice(datagram.data())?;
         // TODO: Check success
         Ok(())
     }

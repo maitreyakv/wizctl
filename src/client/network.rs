@@ -25,6 +25,7 @@ use thiserror::Error;
 pub fn init_socket(for_broadcast: bool, port: u16) -> Result<UdpSocket> {
     let bind_address = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port);
     let socket = UdpSocket::bind(bind_address)?;
+    // TODO: Can we always set broadcast???
     if for_broadcast {
         socket.set_broadcast(true)?;
     }

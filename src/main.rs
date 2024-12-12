@@ -65,12 +65,17 @@ fn set_light(ip: &IpAddr, on: &bool, off: &bool) -> Result<()> {
     let client = Client::default();
 
     if *on {
-        return client.turn_light_on(ip);
+        client.turn_light_on(ip)?;
+        println!("Turned on light at {}", ip);
+        return Ok(());
     }
 
     if *off {
-        return client.turn_light_off(ip);
+        client.turn_light_off(ip)?;
+        println!("Turned off light at {}", ip);
+        return Ok(());
     }
 
+    println!("No change was made to the light at {}", ip);
     Ok(())
 }

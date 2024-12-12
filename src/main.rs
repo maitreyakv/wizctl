@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::net::Ipv4Addr;
+use tabled::{builder::Builder, settings::Style};
 use wizctl::client::Client;
 
 fn main() -> Result<()> {
@@ -36,9 +37,15 @@ fn list_lights() -> Result<()> {
     lights.sort_by_key(|l| *l.ip());
 
     println!("Found {} lights on the local network", lights.len());
+
+    let mut builder = Builder::default();
+    builder.push_record(vec!["MAC", "IP"]);
     for light in lights {
-        println!("{:>15} - {}", light.ip(), light.mac());
+        builder.push_record(vec![light.mac(), &light.ip().to_string()]);
     }
+
+    let table = builder.build().with(Style::rounded()).to_string();
+    println!("{}", table);
 
     Ok(())
 }

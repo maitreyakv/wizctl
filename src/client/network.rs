@@ -38,7 +38,7 @@ pub fn broadcast_udp_and_receive_responses(
     port: u16,
 ) -> Result<Vec<Datagram>> {
     let broadcast_address = SocketAddrV4::new(Ipv4Addr::BROADCAST, port);
-    socket.send_to(&broadcast_data, broadcast_address)?;
+    socket.send_to(broadcast_data, broadcast_address)?;
 
     sleep(Duration::from_secs(1));
 
@@ -71,7 +71,7 @@ pub fn broadcast_udp_and_receive_responses(
 
 pub fn send_udp_and_receive_response(
     socket: &UdpSocket,
-    send_data: &Vec<u8>,
+    send_data: &[u8],
     ip: &IpAddr,
     port: u16,
 ) -> Result<Datagram> {

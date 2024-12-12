@@ -45,7 +45,7 @@ enum Command {
 }
 
 fn list_lights() -> Result<()> {
-    let client = Client::new();
+    let client = Client::default();
     let mut lights = client.discover()?;
     lights.sort_by_key(|l| *l.ip());
     println!("Found {} lights on the local network", lights.len());
@@ -62,7 +62,7 @@ fn list_lights() -> Result<()> {
 }
 
 fn set_light(ip: &IpAddr, on: &bool, off: &bool) -> Result<()> {
-    let client = Client::new();
+    let client = Client::default();
 
     if *on {
         return client.turn_light_on(ip);

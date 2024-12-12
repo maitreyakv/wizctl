@@ -2,23 +2,19 @@ mod messages;
 mod network;
 
 use crate::devices::Light;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use messages::{
     get_pilot::{GetPilotRequest, GetPilotResponse},
     set_pilot::{SetPilotRequest, SetPilotResponse},
 };
 use network::{broadcast_udp_and_receive_responses, init_socket, send_udp_and_receive_response};
 use std::net::IpAddr;
-use std::str;
 
+#[derive(Default)]
 pub struct Client {}
 
 // TODO: Remove client struct and use plain functions???
 impl Client {
-    pub fn new() -> Self {
-        Self {}
-    }
-
     pub fn discover(&self) -> Result<Vec<Light>> {
         let socket = init_socket(true, 38899)?;
         let broadcast_data = serde_json::to_vec(&GetPilotRequest::default())?;
@@ -38,18 +34,18 @@ impl Client {
     }
 
     pub fn turn_light_on(&self, ip: &IpAddr) -> Result<()> {
-        self.send_set_pilot(ip, SetPilotRequest::on())
+        self.send_set_pilot_request(ip, SetPilotRequest::on())
     }
 
     pub fn turn_light_off(&self, ip: &IpAddr) -> Result<()> {
-        self.send_set_pilot(ip, SetPilotRequest::off())
+        self.send_set_pilot_request(ip, SetPilotRequest::off())
     }
 
-    fn send_set_pilot(&self, ip: &IpAddr, request: SetPilotRequest) -> Result<()> {
+    fn send_set_pilot_request(&self, ip: &IpAddr, request: SetPilotRequest) -> Result<()> {
         let socket = init_socket(false, 38899)?;
         let send_data = serde_json::to_vec(&request)?;
         let datagram = send_udp_and_receive_response(&socket, &send_data, ip, 38899)?;
-        let response: SetPilotResponse = serde_json::from_slice(datagram.data())?;
+        let _response: SetPilotResponse = serde_json::from_slice(datagram.data())?;
         // TODO: Check success
         Ok(())
     }

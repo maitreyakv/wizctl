@@ -16,6 +16,16 @@ impl SetPilotRequest {
             },
         }
     }
+
+    pub fn off() -> Self {
+        Self {
+            method: "setPilot".to_string(),
+            params: SetPilotRequestParams {
+                state: Some(false),
+                ..Default::default()
+            },
+        }
+    }
 }
 
 #[derive(Default, Serialize)]

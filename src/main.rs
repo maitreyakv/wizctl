@@ -68,5 +68,9 @@ fn set_light(ip: &IpAddr, on: &bool, off: &bool) -> Result<()> {
         return client.turn_light_on(ip);
     }
 
+    if *off {
+        return client.turn_light_off(ip);
+    }
+
     Ok(())
 }

@@ -2,9 +2,9 @@ use anyhow::Result;
 use derive_getters::Getters;
 use std::{
     io,
-    net::{Ipv4Addr, SocketAddr, SocketAddrV4, UdpSocket},
+    net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, UdpSocket},
     thread::sleep,
-    time::Duration,
+    time::{Duration, Instant},
 };
 use thiserror::Error;
 
@@ -69,6 +69,49 @@ pub fn broadcast_udp_and_receive_responses(
     Ok(datagrams)
 }
 
+pub fn send_udp_and_receive_response(
+    socket: &UdpSocket,
+    send_data: &Vec<u8>,
+    ip: &IpAddr,
+    port: u16,
+) -> Result<Datagram> {
+    socket.send_to(send_data, SocketAddr::new(*ip, port))?;
+
+    let max_wait_duration = Duration::from_secs(1);
+    let start = Instant::now();
+    loop {
+        if start.elapsed() >= max_wait_duration {
+            return Err(NetworkError::NoUdpResponse(max_wait_duration).into());
+        }
+
+        let datagram_result = recv_from_socket(socket);
+        match datagram_result {
+            Ok(datagram) => {
+                if datagram.source_address().ip() != *ip {
+                    return Err(NetworkError::IncorrectResponseAddress {
+                        actual_address: datagram.source_address().ip(),
+                        expected_address: *ip,
+                    }
+                    .into());
+                }
+
+                return Ok(datagram);
+            }
+            // TODO: Deduplicate code
+            Err(e) => match e.downcast::<io::Error>() {
+                Ok(io_error) => {
+                    if io_error.kind() == io::ErrorKind::WouldBlock {
+                        continue;
+                    }
+
+                    return Err(io_error.into());
+                }
+                Err(other_error) => return Err(other_error),
+            },
+        };
+    }
+}
+
 fn recv_from_socket(socket: &UdpSocket) -> Result<Datagram> {
     let mut buf = [0; 256];
     let (n_bytes, source_address) = socket.recv_from(&mut buf)?;
@@ -92,51 +135,11 @@ pub struct Datagram {
 enum NetworkError {
     #[error("received UDP message was too large for buffer of size {0}")]
     BufferTooSmall(usize),
+    #[error("did not receive UDP response after {0:?}")]
+    NoUdpResponse(Duration),
+    #[error("received response from {actual_address}, but expected it from {expected_address}")]
+    IncorrectResponseAddress {
+        actual_address: IpAddr,
+        expected_address: IpAddr,
+    },
 }
-
-//impl UdpClient {
-//
-//    pub fn send_udp_and_receive_response(
-//        &self,
-//        send_data: &[u8],
-//        ip: &Ipv4Addr,
-//    ) -> error_stack::Result<Datagram, NetworkError> {
-//        self.socket
-//            .send_to(send_data, SocketAddrV4::new(*ip, PORT))
-//            .change_context(NetworkError::FailedUdpSend)?;
-//
-//        let max_wait_duration = Duration::from_secs(1);
-//        let start = Instant::now();
-//        loop {
-//            if start.elapsed() >= max_wait_duration {
-//                return error_stack::Result::Err(NetworkError::FailedUdpReceive.into())
-//                    .attach_printable(format!(
-//                        "Did not receive a response within {:?}",
-//                        max_wait_duration
-//                    ));
-//            }
-//
-//            let datagram_result = self.recv_from_socket();
-//            match datagram_result {
-//                Ok(datagram) => {
-//                    if datagram.source_address().ip() != *ip {
-//                        return error_stack::Result::Err(
-//                            NetworkError::ReceivedMessageFromUnexpectedSource.into(),
-//                        )
-//                        .attach_printable(format!("sent to {}", ip))
-//                        .attach_printable(format!("received from {}", datagram.source_address()));
-//                    }
-//
-//                    return Ok(datagram);
-//                }
-//                Err(r) => {
-//                    if r.current_context().kind() == io::ErrorKind::WouldBlock {
-//                        continue;
-//                    }
-//
-//                    return Err(r).change_context(NetworkError::FailedUdpReceive);
-//                }
-//            };
-//        }
-//    }
-//}

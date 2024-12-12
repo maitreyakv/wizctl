@@ -2,9 +2,14 @@ mod messages;
 mod network;
 
 use crate::devices::Light;
-use anyhow::Result;
-use messages::get_pilot::{GetPilotRequest, GetPilotResponse};
-use network::{broadcast_udp_and_receive_responses, init_socket};
+use anyhow::{Context, Result};
+use core::str;
+use messages::{
+    get_pilot::{GetPilotRequest, GetPilotResponse},
+    set_pilot::{SetPilotRequest, SetPilotResponse},
+};
+use network::{broadcast_udp_and_receive_responses, init_socket, send_udp_and_receive_response};
+use std::net::IpAddr;
 
 pub struct Client {}
 
@@ -15,13 +20,10 @@ impl Client {
 
     pub fn discover(&self) -> Result<Vec<Light>> {
         let socket = init_socket(true, 38899)?;
-
         let broadcast_data = serde_json::to_vec(&GetPilotRequest::default())?;
-
         let datagrams = broadcast_udp_and_receive_responses(&socket, &broadcast_data, 38899)?;
 
         let mut lights = Vec::new();
-
         for datagram in datagrams {
             let response: GetPilotResponse = serde_json::from_slice(datagram.data())?;
             let light = Light::new(
@@ -32,5 +34,18 @@ impl Client {
         }
 
         Ok(lights)
+    }
+
+    pub fn turn_light_on(&self, ip: &IpAddr) -> Result<()> {
+        let socket = init_socket(false, 38899)?;
+        let send_data = serde_json::to_vec(&SetPilotRequest::on())?;
+        let datagram = send_udp_and_receive_response(&socket, &send_data, ip, 38899)?;
+
+        let response_json = str::from_utf8(datagram.data())?;
+        let response: SetPilotResponse =
+            serde_json::from_str(response_json).context(response_json.to_string())?;
+        dbg!(response);
+
+        Ok(())
     }
 }

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use std::net::Ipv4Addr;
+use std::net::IpAddr;
 use tabled::{builder::Builder, settings::Style};
 use wizctl::client::Client;
 
@@ -9,7 +9,7 @@ fn main() -> Result<()> {
 
     match &cli.command {
         Command::List => list_lights(),
-        Command::Set { ip } => set_light(ip),
+        Command::Set { ip, on, off } => set_light(ip, on, off),
     }
 }
 
@@ -26,16 +26,28 @@ enum Command {
     #[clap(about = "Sets the color/state of a light")]
     Set {
         #[clap(help = "IP address of the light to set")]
-        ip: Ipv4Addr,
+        ip: IpAddr,
+        #[clap(
+            long,
+            required = false,
+            conflicts_with = "off",
+            help = "Turns the light on"
+        )]
+        on: bool,
+        #[clap(
+            long,
+            required = false,
+            conflicts_with = "on",
+            help = "Turns the light off"
+        )]
+        off: bool,
     },
 }
 
 fn list_lights() -> Result<()> {
     let client = Client::new();
-
     let mut lights = client.discover()?;
     lights.sort_by_key(|l| *l.ip());
-
     println!("Found {} lights on the local network", lights.len());
 
     let mut builder = Builder::default();
@@ -43,14 +55,18 @@ fn list_lights() -> Result<()> {
     for light in lights {
         builder.push_record(vec![light.mac(), &light.ip().to_string()]);
     }
-
     let table = builder.build().with(Style::rounded()).to_string();
     println!("{}", table);
 
     Ok(())
 }
 
-fn set_light(ip: &Ipv4Addr) -> Result<()> {
-    dbg!(ip);
+fn set_light(ip: &IpAddr, on: &bool, off: &bool) -> Result<()> {
+    let client = Client::new();
+
+    if *on {
+        return client.turn_light_on(ip);
+    }
+
     Ok(())
 }

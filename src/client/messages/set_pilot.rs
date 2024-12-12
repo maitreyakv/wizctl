@@ -1,8 +1,24 @@
-use derive_getters::Getters;
-use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Debug, Default, Setters)]
+#[derive(Serialize)]
+pub struct SetPilotRequest {
+    method: String,
+    params: SetPilotRequestParams,
+}
+
+impl SetPilotRequest {
+    pub fn on() -> Self {
+        Self {
+            method: "setPilot".to_string(),
+            params: SetPilotRequestParams {
+                state: Some(true),
+                ..Default::default()
+            },
+        }
+    }
+}
+
+#[derive(Default, Serialize)]
 pub struct SetPilotRequestParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     state: Option<bool>,
@@ -20,29 +36,14 @@ pub struct SetPilotRequestParams {
     dimming: Option<u8>,
 }
 
-#[derive(Serialize, Debug, Setters)]
-pub struct SetPilotRequest {
-    method: String,
-    params: SetPilotRequestParams,
-}
-
-impl Default for SetPilotRequest {
-    fn default() -> Self {
-        Self {
-            method: "setPilot".to_string(),
-            params: SetPilotRequestParams::default(),
-        }
-    }
-}
-
-#[derive(Deserialize, Debug, Getters)]
-pub struct SetPilotResponseResult {
-    success: bool,
-}
-
-#[derive(Deserialize, Debug, Getters)]
+#[derive(Debug, Deserialize)]
 pub struct SetPilotResponse {
     method: String,
     env: String,
     result: SetPilotResponseResult,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SetPilotResponseResult {
+    success: bool,
 }

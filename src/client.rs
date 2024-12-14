@@ -18,6 +18,7 @@ pub struct Client {}
 
 // TODO: Remove client struct and use plain functions???
 impl Client {
+    // TODO: Need more reliable discovery for lights that are off
     pub fn discover(&self) -> Result<Vec<Light>> {
         let socket = init_socket(true, 38899)?;
         let broadcast_data = serde_json::to_vec(&GetPilotRequest::default())?;

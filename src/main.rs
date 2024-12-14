@@ -9,6 +9,7 @@ fn main() -> Result<()> {
 
     match &cli.command {
         Command::List => list_lights(),
+        Command::Inspect { ip } => inspect_light(ip),
         Command::Set { ip, on, off, rgbcw } => set_light(ip, on, off, rgbcw),
     }
 }
@@ -23,6 +24,11 @@ struct Cli {
 enum Command {
     #[clap(about = "List all the available lights on the local network")]
     List,
+    #[clap(about = "Inspects the state and configuration of a device on the local network")]
+    Inspect {
+        #[clap(help = "IP address of the light to inspect")]
+        ip: IpAddr,
+    },
     #[clap(about = "Sets the color/state of a light")]
     Set {
         #[clap(help = "IP address of the light to set")]
@@ -68,6 +74,10 @@ fn list_lights() -> Result<()> {
     Ok(())
 }
 
+fn inspect_light(_ip: &IpAddr) -> Result<()> {
+    unimplemented!()
+}
+
 fn set_light(ip: &IpAddr, on: &bool, off: &bool, rgbcw_option: &Option<RGBCW>) -> Result<()> {
     let client = Client::default();
 
@@ -90,5 +100,6 @@ fn set_light(ip: &IpAddr, on: &bool, off: &bool, rgbcw_option: &Option<RGBCW>) -
     }
 
     println!("No change was made to the light at {}", ip);
+    println!("Use `wizctl set --help` to see what you can set");
     Ok(())
 }

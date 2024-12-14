@@ -1,9 +1,17 @@
+all: lint build build-release
+
 build:
 	cargo build
 
-clean:
-	cargo clean
+build-release:
+	cargo build --release
+
+check:
+	cargo check
 
 lint: 
 	cargo fmt --check
-	cargo clippy
+	cargo clippy -- -D warnings
+
+clean:
+	cargo clean

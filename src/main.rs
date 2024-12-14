@@ -2,14 +2,14 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::net::IpAddr;
 use tabled::{builder::Builder, settings::Style};
-use wizctl::client::Client;
+use wizctl::{client::Client, color::RGBCW};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
         Command::List => list_lights(),
-        Command::Set { ip, on, off } => set_light(ip, on, off),
+        Command::Set { ip, on, off, rgbcw } => set_light(ip, on, off, rgbcw),
     }
 }
 
@@ -41,6 +41,13 @@ enum Command {
             help = "Turns the light off"
         )]
         off: bool,
+        #[clap(
+            long,
+            required = false,
+            conflicts_with_all = vec!["off"],
+            help = "Sets the color with an RGBCW value (e.g. \"255,250,245,0,0\")",
+        )]
+        rgbcw: Option<RGBCW>,
     },
 }
 
@@ -61,8 +68,14 @@ fn list_lights() -> Result<()> {
     Ok(())
 }
 
-fn set_light(ip: &IpAddr, on: &bool, off: &bool) -> Result<()> {
+fn set_light(ip: &IpAddr, on: &bool, off: &bool, rgbcw_option: &Option<RGBCW>) -> Result<()> {
     let client = Client::default();
+
+    if let Some(rgbcw) = rgbcw_option {
+        client.set_rgbcw(ip, rgbcw)?;
+        println!("Set light at {} to {}", ip, rgbcw);
+        return Ok(());
+    }
 
     if *on {
         client.turn_light_on(ip)?;

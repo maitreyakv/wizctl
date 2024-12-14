@@ -1,15 +1,34 @@
+use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize)]
+use crate::color::RGBCW;
+
+const METHOD: &str = "setPilot";
+
+#[derive(Debug, Serialize)]
 pub struct SetPilotRequest {
     method: String,
     params: SetPilotRequestParams,
 }
 
 impl SetPilotRequest {
+    pub fn rgbcw(rgbcw: &RGBCW) -> Self {
+        Self {
+            method: METHOD.to_string(),
+            params: SetPilotRequestParams {
+                r: Some(*rgbcw.r()),
+                g: Some(*rgbcw.g()),
+                b: Some(*rgbcw.b()),
+                c: Some(*rgbcw.c()),
+                w: Some(*rgbcw.w()),
+                ..Default::default()
+            },
+        }
+    }
+
     pub fn on() -> Self {
         Self {
-            method: "setPilot".to_string(),
+            method: METHOD.to_string(),
             params: SetPilotRequestParams {
                 state: Some(true),
                 ..Default::default()
@@ -19,7 +38,7 @@ impl SetPilotRequest {
 
     pub fn off() -> Self {
         Self {
-            method: "setPilot".to_string(),
+            method: METHOD.to_string(),
             params: SetPilotRequestParams {
                 state: Some(false),
                 ..Default::default()
@@ -28,8 +47,8 @@ impl SetPilotRequest {
     }
 }
 
-#[derive(Default, Serialize)]
-pub struct SetPilotRequestParams {
+#[derive(Debug, Default, Serialize)]
+struct SetPilotRequestParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     state: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -46,14 +65,15 @@ pub struct SetPilotRequestParams {
     dimming: Option<u8>,
 }
 
-#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+#[derive(Debug, Deserialize, Getters)]
 pub struct SetPilotResponse {
     method: String,
     env: String,
     result: SetPilotResponseResult,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Getters)]
 pub struct SetPilotResponseResult {
     success: bool,
 }

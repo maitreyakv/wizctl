@@ -14,6 +14,7 @@ impl Default for GetPilotRequest {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Getters)]
 pub struct GetPilotResponse {
     method: String,
@@ -21,6 +22,7 @@ pub struct GetPilotResponse {
     result: GetPilotResponseResult,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Getters)]
 pub struct GetPilotResponseResult {
     mac: String,

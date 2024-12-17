@@ -58,7 +58,7 @@ enum Command {
 }
 
 fn list_lights() -> Result<()> {
-    let client = Client::default();
+    let client = Client::new()?;
     let mut lights = client.discover()?;
     lights.sort_by_key(|l| *l.ip());
     println!("Found {} lights on the local network", lights.len());
@@ -79,7 +79,7 @@ fn inspect_light(_ip: &IpAddr) -> Result<()> {
 }
 
 fn set_light(ip: &IpAddr, on: &bool, off: &bool, rgbcw_option: &Option<RGBCW>) -> Result<()> {
-    let client = Client::default();
+    let client = Client::new()?;
 
     if let Some(rgbcw) = rgbcw_option {
         client.set_rgbcw(ip, rgbcw)?;

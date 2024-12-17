@@ -10,19 +10,28 @@ use messages::{
     set_pilot::{SetPilotRequest, SetPilotResponse},
 };
 use network::{broadcast_udp_and_receive_responses, init_socket, send_udp_and_receive_response};
-use std::net::IpAddr;
+use std::net::{IpAddr, UdpSocket};
 use thiserror::Error;
 
-#[derive(Default)]
-pub struct Client {}
+pub struct Client {
+    socket: UdpSocket,
+}
 
-// TODO: Remove client struct and use plain functions???
+impl Client {
+    pub fn new() -> Result<Self> {
+        Ok(Self {
+            socket: init_socket(38899)?,
+        })
+    }
+}
+
 impl Client {
     // TODO: Need more reliable discovery for lights that are off
     pub fn discover(&self) -> Result<Vec<Light>> {
-        let socket = init_socket(true, 38899)?;
+        self.socket.set_broadcast(true)?;
         let broadcast_data = serde_json::to_vec(&GetPilotRequest::default())?;
-        let datagrams = broadcast_udp_and_receive_responses(&socket, &broadcast_data, 38899)?;
+        let datagrams = broadcast_udp_and_receive_responses(&self.socket, &broadcast_data, 38899)?;
+        self.socket.set_broadcast(false)?;
 
         let mut lights = Vec::new();
         for datagram in datagrams {
@@ -56,9 +65,8 @@ impl Client {
     }
 
     fn send_set_pilot_request(&self, ip: &IpAddr, request: &SetPilotRequest) -> Result<()> {
-        let socket = init_socket(false, 38899)?;
         let send_data = serde_json::to_vec(request)?;
-        let datagram = send_udp_and_receive_response(&socket, &send_data, ip, 38899)?;
+        let datagram = send_udp_and_receive_response(&self.socket, &send_data, ip, 38899)?;
 
         let response_json = str::from_utf8(datagram.data())?;
 

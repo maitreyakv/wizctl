@@ -14,6 +14,7 @@ fn main() -> Result<()> {
     }
 }
 
+/// Controls WiZ Connected devices
 #[derive(Parser)]
 struct Cli {
     #[command(subcommand)]

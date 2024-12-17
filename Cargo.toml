@@ -1,6 +1,7 @@
 [package]
 name = "wizctl"
 version = "0.1.0"
+description = "Rust library and CLI tool for controlling WiZ Connected devices"
 authors = ["Maitreya Venkataswamy <maitreyakv@gmail.com>"]
 edition = "2021"
 

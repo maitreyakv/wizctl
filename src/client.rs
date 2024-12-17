@@ -1,13 +1,12 @@
 mod messages;
 mod network;
 
-use crate::{color::RGBCW, devices::Light};
+use crate::{color::RGBCW, devices::Device};
 use anyhow::{Context, Result};
 use core::str;
 use messages::{
     error::ErrorResponse,
     get_model_config::{GetModelConfigRequest, GetModelConfigResponse},
-    get_pilot::{GetPilotRequest, GetPilotResponse},
     get_power::{GetPowerRequest, GetPowerResponse},
     get_system_config::{GetSystemConfigRequest, GetSystemConfigResponse},
     set_pilot::{SetPilotRequest, SetPilotResponse},
@@ -34,21 +33,21 @@ impl Client {
 
 impl Client {
     // TODO: Need more reliable discovery for lights that are off
-    pub fn discover(&self) -> Result<Vec<Light>> {
-        let broadcast_data = serde_json::to_vec(&GetPilotRequest::default())?;
+    pub fn discover(&self) -> Result<Vec<Device>> {
+        let broadcast_data = serde_json::to_vec(&GetSystemConfigRequest::default())?;
         let datagrams = broadcast_and_receive_datagrams(&self.socket, &broadcast_data, PORT)?;
 
-        let mut lights = Vec::new();
+        let mut devices = Vec::new();
         for datagram in datagrams {
-            let response: GetPilotResponse = serde_json::from_slice(datagram.data())?;
-            let light = Light::new(
+            let response: GetSystemConfigResponse = serde_json::from_slice(datagram.data())?;
+            let device = Device::new(
                 datagram.source_address().ip(),
                 response.result().mac().to_string(),
             );
-            lights.push(light);
+            devices.push(device);
         }
 
-        Ok(lights)
+        Ok(devices)
     }
 
     pub fn get_config(&self, ip: &IpAddr) -> Result<()> {
@@ -87,13 +86,13 @@ impl Client {
             .with_context(|| format!("Failed request: {:?}", request))
     }
 
-    pub fn turn_light_on(&self, ip: &IpAddr) -> Result<()> {
+    pub fn turn_device_on(&self, ip: &IpAddr) -> Result<()> {
         let request = SetPilotRequest::on();
         self.send_set_request::<SetPilotRequest, SetPilotResponse>(ip, &request)
             .with_context(|| format!("Failed request: {:?}", request))
     }
 
-    pub fn turn_light_off(&self, ip: &IpAddr) -> Result<()> {
+    pub fn turn_device_off(&self, ip: &IpAddr) -> Result<()> {
         let request = SetPilotRequest::off();
         self.send_set_request::<SetPilotRequest, SetPilotResponse>(ip, &request)
             .with_context(|| format!("Failed request {:?}", request))

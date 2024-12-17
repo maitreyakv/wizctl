@@ -8,8 +8,6 @@ use std::{
 };
 use thiserror::Error;
 
-//const PORT: u16 = 38899;
-//
 //pub fn rssi_to_signal_strength(rssi: i8) -> String {
 //    if rssi < -70 {
 //        "\u{2840} ".to_string()
@@ -29,13 +27,15 @@ pub fn init_socket(port: u16) -> Result<UdpSocket> {
     Ok(socket)
 }
 
-pub fn broadcast_udp_and_receive_responses(
+pub fn broadcast_and_receive_datagrams(
     socket: &UdpSocket,
     broadcast_data: &Vec<u8>,
     port: u16,
 ) -> Result<Vec<Datagram>> {
     let broadcast_address = SocketAddrV4::new(Ipv4Addr::BROADCAST, port);
+    socket.set_broadcast(true)?;
     socket.send_to(broadcast_data, broadcast_address)?;
+    socket.set_broadcast(false)?;
 
     sleep(Duration::from_secs(1));
 
@@ -66,7 +66,7 @@ pub fn broadcast_udp_and_receive_responses(
     Ok(datagrams)
 }
 
-pub fn send_udp_and_receive_response(
+pub fn send_and_receive_datagram(
     socket: &UdpSocket,
     send_data: &[u8],
     ip: &IpAddr,
@@ -110,7 +110,7 @@ pub fn send_udp_and_receive_response(
 }
 
 fn recv_from_socket(socket: &UdpSocket) -> Result<Datagram> {
-    let mut buf = [0; 256];
+    let mut buf = [0; 512];
     let (n_bytes, source_address) = socket.recv_from(&mut buf)?;
     if n_bytes == buf.len() {
         return Err(NetworkError::BufferTooSmall(n_bytes).into());

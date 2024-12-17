@@ -1,8 +1,5 @@
 use derive_getters::Getters;
-use macaddr::MacAddr6;
 use serde::{Deserialize, Serialize};
-
-use crate::messages::mac_addr_6_from_str;
 
 #[derive(Serialize, Debug)]
 pub struct GetSystemConfigRequest {
@@ -17,10 +14,18 @@ impl Default for GetSystemConfigRequest {
     }
 }
 
+#[allow(dead_code)]
+#[derive(Deserialize, Debug, Getters)]
+pub struct GetSystemConfigResponse {
+    method: String,
+    env: String,
+    result: GetSystemConfigResponseResult,
+}
+
+#[allow(dead_code)]
 #[derive(Deserialize, Getters, Debug)]
 pub struct GetSystemConfigResponseResult {
-    #[serde(deserialize_with = "mac_addr_6_from_str")]
-    mac: MacAddr6,
+    mac: String,
     #[serde(alias = "homeId")]
     home_id: usize,
     #[serde(alias = "roomId")]
@@ -33,11 +38,4 @@ pub struct GetSystemConfigResponseResult {
     #[serde(alias = "groupId")]
     group_id: usize,
     ping: usize,
-}
-
-#[derive(Deserialize, Debug, Getters)]
-pub struct GetSystemConfigResponse {
-    method: String,
-    env: String,
-    result: GetSystemConfigResponseResult,
 }

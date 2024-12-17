@@ -74,8 +74,14 @@ fn list_lights() -> Result<()> {
     Ok(())
 }
 
-fn inspect_light(_ip: &IpAddr) -> Result<()> {
-    unimplemented!()
+fn inspect_light(ip: &IpAddr) -> Result<()> {
+    let client = Client::new()?;
+    client.get_config(ip)?;
+
+    let power = client.get_power(ip)?;
+    dbg!(power);
+
+    Ok(())
 }
 
 fn set_light(ip: &IpAddr, on: &bool, off: &bool, rgbcw_option: &Option<RGBCW>) -> Result<()> {

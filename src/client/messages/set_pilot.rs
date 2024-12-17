@@ -1,6 +1,8 @@
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
+use super::SetResponse;
+
 use crate::color::RGBCW;
 
 const METHOD: &str = "setPilot";
@@ -71,6 +73,12 @@ pub struct SetPilotResponse {
     method: String,
     env: String,
     result: SetPilotResponseResult,
+}
+
+impl SetResponse for SetPilotResponse {
+    fn success(&self) -> bool {
+        *self.result().success()
+    }
 }
 
 #[derive(Debug, Deserialize, Getters)]

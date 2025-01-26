@@ -47,6 +47,16 @@ impl SetPilotRequest {
             },
         }
     }
+
+    pub fn brightness(value: &u8) -> Self {
+        Self {
+            method: METHOD.to_string(),
+            params: SetPilotRequestParams {
+                dimming: Some(*value),
+                ..Default::default()
+            },
+        }
+    }
 }
 
 #[derive(Debug, Default, Serialize)]

@@ -12,7 +12,12 @@ fn main() -> Result<(), CliError> {
     match &cli.command {
         //Command::List => list_devices(),
         //Command::Inspect { ip } => inspect_device(ip),
-        Command::Set { ip, on, off } => set_device(ip, on, off),
+        Command::Set {
+            ip,
+            on,
+            off,
+            brightness,
+        } => set_device(ip, on, off, brightness),
     }
 }
 
@@ -50,6 +55,13 @@ enum Command {
             help = "Turns the device off"
         )]
         off: bool,
+        #[clap(
+            long,
+            required = false,
+            conflicts_with_all = vec!["off"],
+            help = "Sets the brightness with a values between 0 and 255"
+        )]
+        brightness: Option<u8>,
         //#[clap(
         //    long,
         //    required = false,
@@ -87,7 +99,7 @@ enum Command {
 //    Ok(())
 //}
 
-fn set_device(ip: &IpAddr, on: &bool, off: &bool) -> Result<(), CliError> {
+fn set_device(ip: &IpAddr, on: &bool, off: &bool, brightness: &Option<u8>) -> Result<(), CliError> {
     let device = Device::connect(ip.to_owned())?;
 
     //if let Some(rgbcw) = rgbcw_option {
@@ -95,6 +107,12 @@ fn set_device(ip: &IpAddr, on: &bool, off: &bool) -> Result<(), CliError> {
     //    println!("Set device {} to {}", ip, rgbcw);
     //    return Ok(());
     //}
+
+    if let Some(brightness) = brightness {
+        device.set_brightness(brightness);
+        println!("Set brightness at {} to {}", ip, brightness);
+        return Ok(());
+    }
 
     if *on {
         device.turn_on()?;

@@ -98,6 +98,11 @@ impl Connection {
         let request = SetPilotRequest::off();
         self.send_set_request::<SetPilotRequest, SetPilotResponse>(ip, &request)
     }
+
+    pub fn set_brightness(&self, ip: &IpAddr, value: &u8) -> Result<(), ConnectionError> {
+        let request = SetPilotRequest::brightness(value);
+        self.send_set_request::<SetPilotRequest, SetPilotResponse>(ip, &request)
+    }
 }
 
 impl Connection {
@@ -115,10 +120,10 @@ impl Connection {
         U: DeserializeOwned + SetResponse,
     {
         let response = self.send_request_and_receive_response::<T, U>(ip, request)?;
-        if !response.success() {
-            return Err(ConnectionError::UnsuccessfulRequest);
+        if response.success() {
+            return Ok(());
         }
-        Ok(())
+        return Err(ConnectionError::UnsuccessfulRequest);
     }
 
     fn send_request_and_receive_response<T, U>(

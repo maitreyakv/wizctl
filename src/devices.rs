@@ -37,6 +37,12 @@ impl Device {
             .turn_device_off(&self.ip)
             .map_err(|e| DeviceError::StateChangeError(e))
     }
+
+    pub fn set_brightness(&self, value: &u8) -> Result<(), DeviceError> {
+        self.connection
+            .set_brightness(&self.ip, value)
+            .map_err(|e| DeviceError::StateChangeError(e))
+    }
 }
 
 enum DeviceKind {

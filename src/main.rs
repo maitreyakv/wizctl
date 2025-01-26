@@ -109,7 +109,7 @@ fn set_device(ip: &IpAddr, on: &bool, off: &bool, brightness: &Option<u8>) -> Re
     //}
 
     if let Some(brightness) = brightness {
-        device.set_brightness(brightness);
+        device.set_brightness(brightness)?;
         println!("Set brightness at {} to {}", ip, brightness);
         return Ok(());
     }

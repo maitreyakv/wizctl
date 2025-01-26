@@ -122,8 +122,9 @@ impl Connection {
         let response = self.send_request_and_receive_response::<T, U>(ip, request)?;
         if response.success() {
             return Ok(());
+        } else {
+            Err(ConnectionError::UnsuccessfulRequest)
         }
-        return Err(ConnectionError::UnsuccessfulRequest);
     }
 
     fn send_request_and_receive_response<T, U>(
@@ -140,13 +141,13 @@ impl Connection {
         let datagram = send_and_receive_datagram(&self.socket, &send_data, ip, PORT)?;
         let response_json = str::from_utf8(datagram.data())?;
         if let Ok(error_response) = serde_json::from_str::<ErrorResponse>(response_json) {
-            return Err(ConnectionError::ErrorResponse {
+            Err(ConnectionError::ErrorResponse {
                 code: *error_response.error().code(),
                 message: error_response.error().message().to_string(),
-            }
-            .into());
+            })
+        } else {
+            Ok(serde_json::from_str(response_json)?)
         }
-        Ok(serde_json::from_str(response_json)?)
     }
 }
 

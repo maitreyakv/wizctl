@@ -3,9 +3,29 @@ use serde::{Deserialize, Serialize};
 
 use super::SetResponse;
 
-//use crate::color::RGBCW;
-
 const METHOD: &str = "setPilot";
+
+pub struct SetPilotRequestBuilder(SetPilotRequest);
+
+impl SetPilotRequestBuilder {
+    pub fn new() -> Self {
+        Self(SetPilotRequest::default())
+    }
+
+    pub fn build(self) -> SetPilotRequest {
+        self.0
+    }
+
+    pub fn state(mut self, value: bool) -> Self {
+        self.0.params.state = Some(value);
+        self
+    }
+
+    pub fn dimming(mut self, value: &u8) -> Self {
+        self.0.params.dimming = Some(value.to_owned());
+        self
+    }
+}
 
 #[derive(Debug, Serialize)]
 pub struct SetPilotRequest {
@@ -13,48 +33,11 @@ pub struct SetPilotRequest {
     params: SetPilotRequestParams,
 }
 
-impl SetPilotRequest {
-    //pub fn rgbcw(rgbcw: &RGBCW) -> Self {
-    //    Self {
-    //        method: METHOD.to_string(),
-    //        params: SetPilotRequestParams {
-    //            r: Some(*rgbcw.r()),
-    //            g: Some(*rgbcw.g()),
-    //            b: Some(*rgbcw.b()),
-    //            c: Some(*rgbcw.c()),
-    //            w: Some(*rgbcw.w()),
-    //            ..Default::default()
-    //        },
-    //    }
-    //}
-
-    pub fn on() -> Self {
+impl Default for SetPilotRequest {
+    fn default() -> Self {
         Self {
             method: METHOD.to_string(),
-            params: SetPilotRequestParams {
-                state: Some(true),
-                ..Default::default()
-            },
-        }
-    }
-
-    pub fn off() -> Self {
-        Self {
-            method: METHOD.to_string(),
-            params: SetPilotRequestParams {
-                state: Some(false),
-                ..Default::default()
-            },
-        }
-    }
-
-    pub fn brightness(value: &u8) -> Self {
-        Self {
-            method: METHOD.to_string(),
-            params: SetPilotRequestParams {
-                dimming: Some(*value),
-                ..Default::default()
-            },
+            params: SetPilotRequestParams::default(),
         }
     }
 }

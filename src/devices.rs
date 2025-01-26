@@ -3,6 +3,8 @@ use std::{io, net::IpAddr};
 use regex::Regex;
 use thiserror::Error;
 
+use crate::connection::messages::set_pilot::SetPilotRequestBuilder;
+
 use super::connection::{Connection, ConnectionError};
 
 pub struct Device {
@@ -20,31 +22,59 @@ impl Device {
             .map_err(|e| DeviceError::ConnectError(e))?;
         Ok(Self {
             ip,
-            mac: system_config.mac().to_owned(),
-            kind: DeviceKind::from_module_name(system_config.module_name())?,
+            mac: system_config.result().mac().to_owned(),
+            kind: DeviceKind::from_module_name(system_config.result().module_name())?,
             connection,
         })
     }
 
-    pub fn turn_on(&self) -> Result<(), DeviceError> {
-        self.connection
-            .turn_device_on(&self.ip)
-            .map_err(|e| DeviceError::StateChangeError(e))
-    }
-
-    pub fn turn_off(&self) -> Result<(), DeviceError> {
-        self.connection
-            .turn_device_off(&self.ip)
-            .map_err(|e| DeviceError::StateChangeError(e))
-    }
-
-    pub fn set_brightness(&self, value: &u8) -> Result<(), DeviceError> {
-        self.connection
-            .set_brightness(&self.ip, value)
-            .map_err(|e| DeviceError::StateChangeError(e))
+    pub fn set_pilot(self) -> SetPilotBuilder {
+        SetPilotBuilder {
+            device: self,
+            request_builder: SetPilotRequestBuilder::new(),
+        }
     }
 }
 
+pub struct SetPilotBuilder {
+    device: Device,
+    request_builder: SetPilotRequestBuilder,
+}
+
+impl SetPilotBuilder {
+    pub fn send(self) -> Result<Device, DeviceError> {
+        self.device
+            .connection
+            .set_pilot(&self.device.ip, self.request_builder.build())
+            .map_err(|e| DeviceError::SetPilotError(e))?;
+        Ok(self.device)
+    }
+
+    pub fn on(mut self) -> Self {
+        self.request_builder = self.request_builder.state(true);
+        self
+    }
+
+    pub fn off(mut self) -> Self {
+        self.request_builder = self.request_builder.state(false);
+        self
+    }
+
+    pub fn brightness(mut self, value: &u8) -> Result<Self, DeviceError> {
+        match self.device.kind {
+            DeviceKind::Plug => Err(DeviceError::UnsupportedCommand(
+                self.device.kind,
+                "setting brightness".to_string(),
+            )),
+            DeviceKind::Bulb(_) => {
+                self.request_builder = self.request_builder.dimming(value);
+                Ok(self)
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
 enum DeviceKind {
     Plug,
     Bulb(BulbKind),
@@ -74,6 +104,7 @@ impl DeviceKind {
     }
 }
 
+#[derive(Debug)]
 enum BulbKind {
     DimmableWhite,
     TunableWhite,
@@ -89,5 +120,7 @@ pub enum DeviceError {
     #[error("Did not recognize module name: {0}!")]
     UnrecognizedModuleName(String),
     #[error("Failed to change the state of a device!")]
-    StateChangeError(#[source] ConnectionError),
+    SetPilotError(#[source] ConnectionError),
+    #[error("{0:?} devices do not support {1}!")]
+    UnsupportedCommand(DeviceKind, String),
 }

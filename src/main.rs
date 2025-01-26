@@ -58,7 +58,7 @@ enum Command {
         #[clap(
             long,
             required = false,
-            conflicts_with_all = vec!["off"],
+            conflicts_with = "off",
             help = "Sets the brightness with a values between 0 and 255"
         )]
         brightness: Option<u8>,
@@ -108,26 +108,34 @@ fn set_device(ip: &IpAddr, on: &bool, off: &bool, brightness: &Option<u8>) -> Re
     //    return Ok(());
     //}
 
-    if let Some(brightness) = brightness {
-        device.set_brightness(brightness)?;
-        println!("Set brightness at {} to {}", ip, brightness);
-        return Ok(());
-    }
+    let mut builder = device.set_pilot();
+    let mut messages = Vec::new();
 
     if *on {
-        device.turn_on()?;
-        println!("Turned on device at {}", ip);
-        return Ok(());
+        builder = builder.on();
+        messages.push(format!("Turned on device at {}", ip));
     }
 
     if *off {
-        device.turn_off()?;
-        println!("Turned off device at {}", ip);
-        return Ok(());
+        builder = builder.off();
+        messages.push(format!("Turned off device at {}", ip));
     }
 
-    println!("No change was made to the device at {}", ip);
-    println!("Use `wizctl set --help` to see what you can set");
+    if let Some(brightness) = brightness {
+        builder = builder.brightness(brightness)?;
+        messages.push(format!("Set brightness at {} to {}", ip, brightness));
+    }
+
+    let device = builder.send()?;
+
+    if messages.is_empty() {
+        println!("No change was made to the device at {}", ip);
+        println!("Use `wizctl set --help` to see what you can set");
+    } else {
+        for msg in messages {
+            println!("{}", msg);
+        }
+    }
     Ok(())
 }
 

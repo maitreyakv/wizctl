@@ -1,4 +1,4 @@
-mod messages;
+pub mod messages;
 mod network;
 
 use std::io;
@@ -57,12 +57,9 @@ impl Connection {
     pub fn get_system_config(
         &self,
         ip: &IpAddr,
-    ) -> Result<GetSystemConfigResponseResult, ConnectionError> {
+    ) -> Result<GetSystemConfigResponse, ConnectionError> {
         let request = GetSystemConfigRequest::default();
-        Ok(self
-            .send_get_request::<_, GetSystemConfigResponse>(ip, &request)?
-            .result()
-            .to_owned())
+        self.send_get_request::<GetSystemConfigRequest, GetSystemConfigResponse>(ip, &request)
     }
 
     //pub fn get_power(&self, ip: &IpAddr) -> Result<u32> {
@@ -89,18 +86,7 @@ impl Connection {
     //        .with_context(|| format!("Failed request: {:?}", request))
     //}
 
-    pub fn turn_device_on(&self, ip: &IpAddr) -> Result<(), ConnectionError> {
-        let request = SetPilotRequest::on();
-        self.send_set_request::<SetPilotRequest, SetPilotResponse>(ip, &request)
-    }
-
-    pub fn turn_device_off(&self, ip: &IpAddr) -> Result<(), ConnectionError> {
-        let request = SetPilotRequest::off();
-        self.send_set_request::<SetPilotRequest, SetPilotResponse>(ip, &request)
-    }
-
-    pub fn set_brightness(&self, ip: &IpAddr, value: &u8) -> Result<(), ConnectionError> {
-        let request = SetPilotRequest::brightness(value);
+    pub fn set_pilot(&self, ip: &IpAddr, request: SetPilotRequest) -> Result<(), ConnectionError> {
         self.send_set_request::<SetPilotRequest, SetPilotResponse>(ip, &request)
     }
 }

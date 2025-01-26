@@ -83,18 +83,31 @@ fn list_devices() -> Result<(), CliError> {
     println!("Found {} devices on the local network", devices.len());
 
     let mut builder = Builder::default();
-    builder.push_record(vec!["MAC", "IP", "Type"]);
+    builder.push_record(vec!["MAC", "IP", "Type", "Signal"]);
     for device in devices {
         builder.push_record(vec![
             device.mac(),
             &device.ip().to_string(),
             &format!("{}", device.kind()),
+            &rssi_to_signal_strength(device.get_rssi()?),
         ]);
     }
     let table = builder.build().with(Style::rounded()).to_string();
     println!("{}", table);
 
     Ok(())
+}
+
+fn rssi_to_signal_strength(rssi: i8) -> String {
+    if rssi < -70 {
+        "\u{2840} ".to_string()
+    } else if rssi < -60 {
+        "\u{28e0} ".to_string()
+    } else if rssi < -50 {
+        "\u{28e0}\u{2846}".to_string()
+    } else {
+        "\u{28e0}\u{28fe}".to_string()
+    }
 }
 
 //fn inspect_device(ip: &IpAddr) -> Result<()> {

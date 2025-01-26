@@ -23,7 +23,6 @@ impl Device {
             .map_err(DeviceError::ConnectError)?
             .into_iter()
             .map(|(ip, system_config)| {
-                dbg!(ip, &system_config);
                 Ok(Self {
                     ip,
                     mac: system_config.result().mac().to_string(),
@@ -65,6 +64,16 @@ impl Device {
             request_builder: SetPilotRequestBuilder::new(),
         }
     }
+
+    pub fn get_rssi(&self) -> Result<i8, DeviceError> {
+        Ok(self
+            .connection
+            .get_pilot(&self.ip)
+            .map_err(DeviceError::ConnectError)?
+            .result()
+            .rssi()
+            .to_owned())
+    }
 }
 
 pub struct SetPilotBuilder {
@@ -92,40 +101,32 @@ impl SetPilotBuilder {
     }
 
     pub fn rgbcw(mut self, value: RGBCW) -> Result<Self, DeviceError> {
-        match self.device.kind {
-            DeviceKind::Plug => Err(DeviceError::UnsupportedCommand(
+        if !self.device.kind.is_color() {
+            Err(DeviceError::UnsupportedCommand(
                 self.device.kind,
                 "setting color".to_string(),
-            )),
-            DeviceKind::Bulb(ref bulb_kind) => match bulb_kind {
-                BulbKind::Color => {
-                    self.request_builder = self
-                        .request_builder
-                        .r(*value.r())
-                        .g(*value.g())
-                        .b(*value.b())
-                        .c(*value.c())
-                        .w(*value.w());
-                    Ok(self)
-                }
-                _ => Err(DeviceError::UnsupportedCommand(
-                    self.device.kind,
-                    "setting color".to_string(),
-                )),
-            },
+            ))
+        } else {
+            self.request_builder = self
+                .request_builder
+                .r(*value.r())
+                .g(*value.g())
+                .b(*value.b())
+                .c(*value.c())
+                .w(*value.w());
+            Ok(self)
         }
     }
 
     pub fn brightness(mut self, value: u8) -> Result<Self, DeviceError> {
-        match self.device.kind {
-            DeviceKind::Plug => Err(DeviceError::UnsupportedCommand(
+        if !self.device.kind.is_dimmable() {
+            Err(DeviceError::UnsupportedCommand(
                 self.device.kind,
                 "setting brightness".to_string(),
-            )),
-            DeviceKind::Bulb(_) => {
-                self.request_builder = self.request_builder.dimming(value);
-                Ok(self)
-            }
+            ))
+        } else {
+            self.request_builder = self.request_builder.dimming(value);
+            Ok(self)
         }
     }
 }
@@ -142,8 +143,8 @@ impl Display for DeviceKind {
             f,
             "{}",
             match self {
-                DeviceKind::Plug => "Plug".to_string(),
-                DeviceKind::Bulb(bulb_kind) => format!("Bulb:{}", bulb_kind),
+                Self::Plug => "Plug".to_string(),
+                Self::Bulb(bulb_kind) => format!("Bulb:{}", bulb_kind),
             }
         )
     }
@@ -159,15 +160,29 @@ impl DeviceKind {
             .as_str();
 
         if identifier.contains("SOCKET") {
-            Ok(DeviceKind::Plug)
+            Ok(Self::Plug)
         } else if identifier.contains("TW") {
-            Ok(DeviceKind::Bulb(BulbKind::TunableWhite))
+            Ok(Self::Bulb(BulbKind::TunableWhite))
         } else if identifier.contains("DW") {
-            Ok(DeviceKind::Bulb(BulbKind::DimmableWhite))
+            Ok(Self::Bulb(BulbKind::DimmableWhite))
         } else if identifier.contains("RGB") {
-            Ok(DeviceKind::Bulb(BulbKind::Color))
+            Ok(Self::Bulb(BulbKind::Color))
         } else {
             Err(DeviceError::UnrecognizedModuleName(module_name.to_string()))
+        }
+    }
+
+    fn is_dimmable(&self) -> bool {
+        match self {
+            Self::Plug => false,
+            Self::Bulb(_) => true,
+        }
+    }
+
+    fn is_color(&self) -> bool {
+        match self {
+            Self::Plug => false,
+            Self::Bulb(bulb_kind) => bulb_kind.is_color(),
         }
     }
 }
@@ -192,6 +207,15 @@ impl Display for BulbKind {
                 BulbKind::Color => "Color",
             }
         )
+    }
+}
+
+impl BulbKind {
+    fn is_color(&self) -> bool {
+        match self {
+            Self::Color => true,
+            _ => false,
+        }
     }
 }
 

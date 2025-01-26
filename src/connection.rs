@@ -7,10 +7,9 @@ use core::str;
 use messages::{
     error::ErrorResponse,
     get_model_config::{GetModelConfigRequest, GetModelConfigResponse},
+    get_pilot::{GetPilotRequest, GetPilotResponse},
     get_power::{GetPowerRequest, GetPowerResponse},
-    get_system_config::{
-        GetSystemConfigRequest, GetSystemConfigResponse, GetSystemConfigResponseResult,
-    },
+    get_system_config::{GetSystemConfigRequest, GetSystemConfigResponse},
     set_pilot::{SetPilotRequest, SetPilotResponse},
     SetResponse,
 };
@@ -81,6 +80,11 @@ impl Connection {
     //    self.send_set_request::<SetPilotRequest, SetPilotResponse>(ip, &request)
     //        .with_context(|| format!("Failed request: {:?}", request))
     //}
+
+    pub fn get_pilot(&self, ip: &IpAddr) -> Result<GetPilotResponse, ConnectionError> {
+        let request = GetPilotRequest::default();
+        self.send_get_request::<GetPilotRequest, GetPilotResponse>(ip, &request)
+    }
 
     pub fn set_pilot(&self, ip: &IpAddr, request: SetPilotRequest) -> Result<(), ConnectionError> {
         self.send_set_request::<SetPilotRequest, SetPilotResponse>(ip, &request)

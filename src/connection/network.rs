@@ -7,17 +7,7 @@ use std::{
 };
 use thiserror::Error;
 
-//pub fn rssi_to_signal_strength(rssi: i8) -> String {
-//    if rssi < -70 {
-//        "\u{2840} ".to_string()
-//    } else if rssi < -60 {
-//        "\u{28e0} ".to_string()
-//    } else if rssi < -50 {
-//        "\u{28e0}\u{2846}".to_string()
-//    } else {
-//        "\u{28e0}\u{28fe}".to_string()
-//    }
-//}
+const MAX_WAIT: Duration = Duration::from_secs(2);
 
 pub fn init_socket() -> Result<UdpSocket, io::Error> {
     let bind_address = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0);
@@ -36,7 +26,7 @@ pub fn broadcast_and_receive_datagrams(
     socket.send_to(broadcast_data, broadcast_address)?;
     socket.set_broadcast(false)?;
 
-    sleep(Duration::from_secs(1));
+    sleep(MAX_WAIT);
 
     let mut datagrams = Vec::new();
 
@@ -72,11 +62,10 @@ pub fn send_and_receive_datagram(
 ) -> Result<Datagram, NetworkError> {
     socket.send_to(send_data, SocketAddr::new(*ip, port))?;
 
-    let max_wait_duration = Duration::from_secs(1);
     let start = Instant::now();
     loop {
-        if start.elapsed() >= max_wait_duration {
-            return Err(NetworkError::NoUdpResponse(max_wait_duration));
+        if start.elapsed() >= MAX_WAIT {
+            return Err(NetworkError::NoUdpResponse(MAX_WAIT));
         }
 
         let datagram_result = recv_from_socket(socket);

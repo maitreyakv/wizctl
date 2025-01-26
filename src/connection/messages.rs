@@ -5,6 +5,6 @@ pub mod get_power;
 pub mod get_system_config;
 pub mod set_pilot;
 
-pub trait SetResponse {
+pub trait SetResponse: std::fmt::Debug {
     fn success(&self) -> bool;
 }

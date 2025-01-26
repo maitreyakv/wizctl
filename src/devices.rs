@@ -223,13 +223,13 @@ impl BulbKind {
 
 #[derive(Error, Debug)]
 pub enum DeviceError {
-    #[error("Client failed to initialize!")]
+    #[error("Client failed to initialize!\n{0}")]
     ClientInitError(#[source] io::Error),
-    #[error("Failed to connect to device!")]
+    #[error("Failed to connect to device!\n{0}")]
     ConnectError(#[source] ConnectionError),
     #[error("Did not recognize module name: {0}!")]
     UnrecognizedModuleName(String),
-    #[error("Failed to change the state of a device!")]
+    #[error("Failed to change the state of a device!\n{0}")]
     SetPilotError(#[source] ConnectionError),
     #[error("{0:?} devices do not support {1}!")]
     UnsupportedCommand(DeviceKind, String),

@@ -1,15 +1,16 @@
 use clap::{Parser, Subcommand};
 use std::net::IpAddr;
+use std::process::ExitCode;
 use tabled::{builder::Builder, settings::Style};
 use wizctl::color::RGBCW;
 use wizctl::devices::{Device, DeviceError};
 
 use thiserror::Error;
 
-fn main() -> Result<(), CliError> {
+fn main() -> ExitCode {
     let cli = Cli::parse();
 
-    match &cli.command {
+    let result = match &cli.command {
         Command::List => list_devices(),
         //Command::Inspect { ip } => inspect_device(ip),
         Command::Set {
@@ -19,6 +20,13 @@ fn main() -> Result<(), CliError> {
             rgbcw,
             brightness,
         } => set_device(ip, on, off, rgbcw, brightness),
+    };
+
+    if let Err(e) = result {
+        eprintln!("{}", e);
+        ExitCode::FAILURE
+    } else {
+        ExitCode::SUCCESS
     }
 }
 

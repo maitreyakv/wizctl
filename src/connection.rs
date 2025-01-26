@@ -97,13 +97,13 @@ impl Connection {
     fn send_set_request<T, U>(&self, ip: &IpAddr, request: &T) -> Result<(), ConnectionError>
     where
         T: Serialize,
-        U: DeserializeOwned + SetResponse,
+        U: DeserializeOwned + SetResponse + 'static,
     {
         let response = self.send_request_and_receive_response::<T, U>(ip, request)?;
         if response.success() {
             Ok(())
         } else {
-            Err(ConnectionError::UnsuccessfulRequest)
+            Err(ConnectionError::UnsuccessfulRequest(Box::new(response)))
         }
     }
 
@@ -133,16 +133,14 @@ impl Connection {
 
 #[derive(Debug, Error)]
 pub enum ConnectionError {
-    #[error("Received response with invalid UTF8")]
+    #[error("Received response with invalid UTF8!\n{0}")]
     InvalidUtf8(#[from] str::Utf8Error),
-    #[error("UDP operation failed")]
+    #[error("UDP operation failed!\n{0}")]
     NetworkError(#[from] NetworkError),
     #[error("Received error code {code}: \"{message}\"!")]
     ErrorResponse { code: isize, message: String },
-    #[error("Could not deserialize response!")]
+    #[error("Could not deserialize response!\n{0}")]
     InvalidResponse(#[from] serde_json::Error),
-    #[error("Device was not able to handle request!")]
-    UnsuccessfulRequest,
-    //    #[error("Device at {0} does not support getPower!")]
-    //    DeviceDoesNotSupportGetPower(IpAddr),
+    #[error("Device was not able to handle request!\n{0:?}")]
+    UnsuccessfulRequest(Box<dyn SetResponse>),
 }

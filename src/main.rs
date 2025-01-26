@@ -10,7 +10,7 @@ fn main() -> Result<(), CliError> {
     let cli = Cli::parse();
 
     match &cli.command {
-        //Command::List => list_devices(),
+        Command::List => list_devices(),
         //Command::Inspect { ip } => inspect_device(ip),
         Command::Set {
             ip,
@@ -31,8 +31,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    //#[clap(about = "List all the available devices on the local network")]
-    //List,
+    #[clap(about = "List all the available devices on the local network")]
+    List,
     //#[clap(about = "Inspects the state and configuration of a device on the local network")]
     //Inspect {
     //    #[clap(help = "IP address of the device to inspect")]
@@ -77,23 +77,26 @@ enum Command {
     },
 }
 
-//fn list_devices() -> Result<()> {
-//    let client = Client::new()?;
-//    let mut devices = client.discover()?;
-//    devices.sort_by_key(|l| *l.ip());
-//    println!("Found {} devices on the local network", devices.len());
-//
-//    let mut builder = Builder::default();
-//    builder.push_record(vec!["MAC", "IP"]);
-//    for device in devices {
-//        builder.push_record(vec![device.mac(), &device.ip().to_string()]);
-//    }
-//    let table = builder.build().with(Style::rounded()).to_string();
-//    println!("{}", table);
-//
-//    Ok(())
-//}
-//
+fn list_devices() -> Result<(), CliError> {
+    let mut devices = Device::discover()?;
+    devices.sort_by_key(|l| *l.ip());
+    println!("Found {} devices on the local network", devices.len());
+
+    let mut builder = Builder::default();
+    builder.push_record(vec!["MAC", "IP", "Type"]);
+    for device in devices {
+        builder.push_record(vec![
+            device.mac(),
+            &device.ip().to_string(),
+            &format!("{}", device.kind()),
+        ]);
+    }
+    let table = builder.build().with(Style::rounded()).to_string();
+    println!("{}", table);
+
+    Ok(())
+}
+
 //fn inspect_device(ip: &IpAddr) -> Result<()> {
 //    let client = Client::new()?;
 //    client.get_config(ip)?;

@@ -1,4 +1,4 @@
-use std::{io, net::IpAddr};
+use std::{fmt::Display, io, net::IpAddr};
 
 use regex::Regex;
 use thiserror::Error;
@@ -16,17 +16,47 @@ pub struct Device {
 }
 
 impl Device {
+    pub fn discover() -> Result<Vec<Self>, DeviceError> {
+        let connection = Connection::new().map_err(DeviceError::ClientInitError)?;
+        connection
+            .discover()
+            .map_err(DeviceError::ConnectError)?
+            .into_iter()
+            .map(|(ip, system_config)| {
+                dbg!(ip, &system_config);
+                Ok(Self {
+                    ip,
+                    mac: system_config.result().mac().to_string(),
+                    kind: DeviceKind::from_module_name(system_config.result().module_name())?,
+                    connection: Connection::new().map_err(DeviceError::ClientInitError)?,
+                })
+            })
+            .collect()
+    }
+
     pub fn connect(ip: IpAddr) -> Result<Self, DeviceError> {
-        let connection = Connection::new().map_err(|e| DeviceError::ClientInitError(e))?;
+        let connection = Connection::new().map_err(DeviceError::ClientInitError)?;
         let system_config = connection
             .get_system_config(&ip)
-            .map_err(|e| DeviceError::ConnectError(e))?;
+            .map_err(DeviceError::ConnectError)?;
         Ok(Self {
             ip,
             mac: system_config.result().mac().to_owned(),
             kind: DeviceKind::from_module_name(system_config.result().module_name())?,
             connection,
         })
+    }
+
+    pub fn ip(&self) -> &IpAddr {
+        &self.ip
+    }
+
+    pub fn mac(&self) -> &str {
+        &self.mac
+    }
+
+    pub fn kind(&self) -> &DeviceKind {
+        &self.kind
     }
 
     pub fn set_pilot(self) -> SetPilotBuilder {
@@ -47,7 +77,7 @@ impl SetPilotBuilder {
         self.device
             .connection
             .set_pilot(&self.device.ip, self.request_builder.build())
-            .map_err(|e| DeviceError::SetPilotError(e))?;
+            .map_err(DeviceError::SetPilotError)?;
         Ok(self.device)
     }
 
@@ -101,9 +131,22 @@ impl SetPilotBuilder {
 }
 
 #[derive(Debug)]
-enum DeviceKind {
+pub enum DeviceKind {
     Plug,
     Bulb(BulbKind),
+}
+
+impl Display for DeviceKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                DeviceKind::Plug => "Plug".to_string(),
+                DeviceKind::Bulb(bulb_kind) => format!("Bulb:{}", bulb_kind),
+            }
+        )
+    }
 }
 
 impl DeviceKind {
@@ -111,8 +154,7 @@ impl DeviceKind {
         let identifier = Regex::new(r"^ESP\d{2}_(\w+)_\d{2}[ABIT]*$")
             .expect("Failed to compile regex!")
             .captures(module_name)
-            .map(|capture| capture.get(0))
-            .flatten()
+            .and_then(|capture| capture.get(0))
             .ok_or_else(|| DeviceError::UnrecognizedModuleName(module_name.to_string()))?
             .as_str();
 
@@ -131,10 +173,26 @@ impl DeviceKind {
 }
 
 #[derive(Debug)]
-enum BulbKind {
+pub enum BulbKind {
     DimmableWhite,
     TunableWhite,
     Color,
+}
+
+impl Display for BulbKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                BulbKind::DimmableWhite => {
+                    "White:Dimmable"
+                }
+                BulbKind::TunableWhite => "White:Tunable",
+                BulbKind::Color => "Color",
+            }
+        )
+    }
 }
 
 #[derive(Error, Debug)]

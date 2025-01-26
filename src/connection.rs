@@ -14,9 +14,9 @@ use messages::{
     set_pilot::{SetPilotRequest, SetPilotResponse},
     SetResponse,
 };
-use network::init_socket;
 use network::send_and_receive_datagram;
 use network::NetworkError;
+use network::{broadcast_and_receive_datagrams, init_socket};
 use serde::{de::DeserializeOwned, Serialize};
 use std::net::{IpAddr, UdpSocket};
 use thiserror::Error;
@@ -36,23 +36,19 @@ impl Connection {
 }
 
 impl Connection {
-    //// TODO: Need more reliable discovery for lights that are off
-    //pub fn discover(&self) -> Result<Vec<Device>> {
-    //    let broadcast_data = serde_json::to_vec(&GetSystemConfigRequest::default())?;
-    //    let datagrams = broadcast_and_receive_datagrams(&self.socket, &broadcast_data, PORT)?;
-    //
-    //    let mut devices = Vec::new();
-    //    for datagram in datagrams {
-    //        let response: GetSystemConfigResponse = serde_json::from_slice(datagram.data())?;
-    //        let device = Device::new(
-    //            datagram.source_address().ip(),
-    //            response.result().mac().to_string(),
-    //        );
-    //        devices.push(device);
-    //    }
-    //
-    //    Ok(devices)
-    //}
+    // TODO: Need more reliable discovery for lights that are off
+    pub fn discover(&self) -> Result<Vec<(IpAddr, GetSystemConfigResponse)>, ConnectionError> {
+        let broadcast_data = serde_json::to_vec(&GetSystemConfigRequest::default())?;
+        Ok(
+            broadcast_and_receive_datagrams(&self.socket, &broadcast_data, PORT)?
+                .into_iter()
+                .map(|datagram| {
+                    serde_json::from_slice::<GetSystemConfigResponse>(datagram.data())
+                        .map(|system_config| (datagram.source_address().ip(), system_config))
+                })
+                .collect::<Result<Vec<(IpAddr, GetSystemConfigResponse)>, _>>()?,
+        )
+    }
 
     pub fn get_system_config(
         &self,
@@ -107,7 +103,7 @@ impl Connection {
     {
         let response = self.send_request_and_receive_response::<T, U>(ip, request)?;
         if response.success() {
-            return Ok(());
+            Ok(())
         } else {
             Err(ConnectionError::UnsuccessfulRequest)
         }

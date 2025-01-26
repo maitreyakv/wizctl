@@ -134,6 +134,7 @@ impl SetPilotBuilder {
 #[derive(Debug)]
 pub enum DeviceKind {
     Plug,
+    LightStrip,
     Bulb(BulbKind),
 }
 
@@ -144,7 +145,8 @@ impl Display for DeviceKind {
             "{}",
             match self {
                 Self::Plug => "Plug".to_string(),
-                Self::Bulb(bulb_kind) => format!("Bulb:{}", bulb_kind),
+                Self::LightStrip => "Light Strip".to_string(),
+                Self::Bulb(bulb_kind) => format!("{} Bulb", bulb_kind),
             }
         )
     }
@@ -166,7 +168,11 @@ impl DeviceKind {
         } else if identifier.contains("DW") {
             Ok(Self::Bulb(BulbKind::DimmableWhite))
         } else if identifier.contains("RGB") {
-            Ok(Self::Bulb(BulbKind::Color))
+            if module_name.ends_with("ABI") {
+                Ok(Self::LightStrip)
+            } else {
+                Ok(Self::Bulb(BulbKind::Color))
+            }
         } else {
             Err(DeviceError::UnrecognizedModuleName(module_name.to_string()))
         }
@@ -175,13 +181,14 @@ impl DeviceKind {
     fn is_dimmable(&self) -> bool {
         match self {
             Self::Plug => false,
-            Self::Bulb(_) => true,
+            Self::Bulb(_) | Self::LightStrip => true,
         }
     }
 
     fn is_color(&self) -> bool {
         match self {
             Self::Plug => false,
+            Self::LightStrip => true,
             Self::Bulb(bulb_kind) => bulb_kind.is_color(),
         }
     }
@@ -200,10 +207,8 @@ impl Display for BulbKind {
             f,
             "{}",
             match self {
-                BulbKind::DimmableWhite => {
-                    "White:Dimmable"
-                }
-                BulbKind::TunableWhite => "White:Tunable",
+                BulbKind::DimmableWhite => "Dimmable White",
+                BulbKind::TunableWhite => "Tunable White",
                 BulbKind::Color => "Color",
             }
         )

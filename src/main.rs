@@ -89,7 +89,11 @@ fn list_devices() -> Result<(), CliError> {
             device.mac(),
             &device.ip().to_string(),
             &format!("{}", device.kind()),
-            &rssi_to_signal_strength(device.get_rssi()?),
+            device
+                .get_rssi()
+                .map(rssi_to_signal_strength)
+                .unwrap_or("".to_string())
+                .as_ref(),
         ]);
     }
     let table = builder.build().with(Style::rounded()).to_string();

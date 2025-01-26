@@ -35,5 +35,5 @@ pub struct GetPilotResponseResult {
     b: Option<u8>,
     c: Option<u8>,
     w: Option<u8>,
-    dimming: u8,
+    dimming: Option<u8>,
 }

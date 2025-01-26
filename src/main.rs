@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use std::net::IpAddr;
 use tabled::{builder::Builder, settings::Style};
-//use wizctl::color::RGBCW;
+use wizctl::color::RGBCW;
 use wizctl::devices::{Device, DeviceError};
 
 use thiserror::Error;
@@ -16,8 +16,9 @@ fn main() -> Result<(), CliError> {
             ip,
             on,
             off,
+            rgbcw,
             brightness,
-        } => set_device(ip, on, off, brightness),
+        } => set_device(ip, on, off, rgbcw, brightness),
     }
 }
 
@@ -41,6 +42,7 @@ enum Command {
     Set {
         #[clap(help = "IP address of the device to set")]
         ip: IpAddr,
+
         #[clap(
             long,
             required = false,
@@ -48,6 +50,7 @@ enum Command {
             help = "Turns the device on"
         )]
         on: bool,
+
         #[clap(
             long,
             required = false,
@@ -55,6 +58,15 @@ enum Command {
             help = "Turns the device off"
         )]
         off: bool,
+
+        #[clap(
+            long,
+            required = false,
+            conflicts_with = "off",
+            help = "Sets the color with an RGBCW value (e.g. \"255,250,245,0,0\")"
+        )]
+        rgbcw: Option<RGBCW>,
+
         #[clap(
             long,
             required = false,
@@ -62,13 +74,6 @@ enum Command {
             help = "Sets the brightness with a values between 0 and 255"
         )]
         brightness: Option<u8>,
-        //#[clap(
-        //    long,
-        //    required = false,
-        //    conflicts_with_all = vec!["off"],
-        //    help = "Sets the color with an RGBCW value (e.g. \"255,250,245,0,0\")",
-        //)]
-        //rgbcw: Option<RGBCW>,
     },
 }
 
@@ -99,14 +104,14 @@ enum Command {
 //    Ok(())
 //}
 
-fn set_device(ip: &IpAddr, on: &bool, off: &bool, brightness: &Option<u8>) -> Result<(), CliError> {
+fn set_device(
+    ip: &IpAddr,
+    on: &bool,
+    off: &bool,
+    rgbcw: &Option<RGBCW>,
+    brightness: &Option<u8>,
+) -> Result<(), CliError> {
     let device = Device::connect(ip.to_owned())?;
-
-    //if let Some(rgbcw) = rgbcw_option {
-    //    client.set_rgbcw(ip, rgbcw)?;
-    //    println!("Set device {} to {}", ip, rgbcw);
-    //    return Ok(());
-    //}
 
     let mut builder = device.set_pilot();
     let mut messages = Vec::new();
@@ -121,8 +126,13 @@ fn set_device(ip: &IpAddr, on: &bool, off: &bool, brightness: &Option<u8>) -> Re
         messages.push(format!("Turned off device at {}", ip));
     }
 
+    if let Some(rgbcw) = rgbcw {
+        builder = builder.rgbcw(rgbcw.to_owned())?;
+        messages.push(format!("Set color at {} to {}", ip, rgbcw))
+    }
+
     if let Some(brightness) = brightness {
-        builder = builder.brightness(brightness)?;
+        builder = builder.brightness(*brightness)?;
         messages.push(format!("Set brightness at {} to {}", ip, brightness));
     }
 

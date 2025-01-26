@@ -21,7 +21,32 @@ impl SetPilotRequestBuilder {
         self
     }
 
-    pub fn dimming(mut self, value: &u8) -> Self {
+    pub fn r(mut self, value: u8) -> Self {
+        self.0.params.r = Some(value);
+        self
+    }
+
+    pub fn g(mut self, value: u8) -> Self {
+        self.0.params.g = Some(value);
+        self
+    }
+
+    pub fn b(mut self, value: u8) -> Self {
+        self.0.params.b = Some(value);
+        self
+    }
+
+    pub fn c(mut self, value: u8) -> Self {
+        self.0.params.c = Some(value);
+        self
+    }
+
+    pub fn w(mut self, value: u8) -> Self {
+        self.0.params.w = Some(value);
+        self
+    }
+
+    pub fn dimming(mut self, value: u8) -> Self {
         self.0.params.dimming = Some(value.to_owned());
         self
     }

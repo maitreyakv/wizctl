@@ -5,6 +5,7 @@ use thiserror::Error;
 
 use crate::connection::messages::set_pilot::SetPilotRequestBuilder;
 
+use super::color::RGBCW;
 use super::connection::{Connection, ConnectionError};
 
 pub struct Device {
@@ -60,7 +61,32 @@ impl SetPilotBuilder {
         self
     }
 
-    pub fn brightness(mut self, value: &u8) -> Result<Self, DeviceError> {
+    pub fn rgbcw(mut self, value: RGBCW) -> Result<Self, DeviceError> {
+        match self.device.kind {
+            DeviceKind::Plug => Err(DeviceError::UnsupportedCommand(
+                self.device.kind,
+                "setting color".to_string(),
+            )),
+            DeviceKind::Bulb(ref bulb_kind) => match bulb_kind {
+                BulbKind::Color => {
+                    self.request_builder = self
+                        .request_builder
+                        .r(*value.r())
+                        .g(*value.g())
+                        .b(*value.b())
+                        .c(*value.c())
+                        .w(*value.w());
+                    Ok(self)
+                }
+                _ => Err(DeviceError::UnsupportedCommand(
+                    self.device.kind,
+                    "setting color".to_string(),
+                )),
+            },
+        }
+    }
+
+    pub fn brightness(mut self, value: u8) -> Result<Self, DeviceError> {
         match self.device.kind {
             DeviceKind::Plug => Err(DeviceError::UnsupportedCommand(
                 self.device.kind,

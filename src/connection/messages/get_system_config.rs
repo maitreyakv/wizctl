@@ -23,7 +23,7 @@ pub struct GetSystemConfigResponse {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Getters, Debug)]
+#[derive(Deserialize, Getters, Debug, Clone)]
 pub struct GetSystemConfigResponseResult {
     mac: String,
     #[serde(alias = "homeId")]

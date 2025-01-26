@@ -1,3 +1,3 @@
-pub mod client;
-pub mod color;
-mod devices;
+mod connection;
+//pub mod color;
+pub mod devices;

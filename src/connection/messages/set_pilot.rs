@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::SetResponse;
 
-use crate::color::RGBCW;
+//use crate::color::RGBCW;
 
 const METHOD: &str = "setPilot";
 
@@ -14,19 +14,19 @@ pub struct SetPilotRequest {
 }
 
 impl SetPilotRequest {
-    pub fn rgbcw(rgbcw: &RGBCW) -> Self {
-        Self {
-            method: METHOD.to_string(),
-            params: SetPilotRequestParams {
-                r: Some(*rgbcw.r()),
-                g: Some(*rgbcw.g()),
-                b: Some(*rgbcw.b()),
-                c: Some(*rgbcw.c()),
-                w: Some(*rgbcw.w()),
-                ..Default::default()
-            },
-        }
-    }
+    //pub fn rgbcw(rgbcw: &RGBCW) -> Self {
+    //    Self {
+    //        method: METHOD.to_string(),
+    //        params: SetPilotRequestParams {
+    //            r: Some(*rgbcw.r()),
+    //            g: Some(*rgbcw.g()),
+    //            b: Some(*rgbcw.b()),
+    //            c: Some(*rgbcw.c()),
+    //            w: Some(*rgbcw.w()),
+    //            ..Default::default()
+    //        },
+    //    }
+    //}
 
     pub fn on() -> Self {
         Self {
@@ -67,7 +67,6 @@ struct SetPilotRequestParams {
     dimming: Option<u8>,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Deserialize, Getters)]
 pub struct SetPilotResponse {
     method: String,

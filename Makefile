@@ -1,9 +1,10 @@
 CARGO_BINARY_ARGS = --bin=wizctl --features=cli
 
-all: lint build 
-
-install: all
+install:
 	cargo install ${CARGO_BINARY_ARGS} --path=${PWD}
+
+uninstall:
+	cargo uninstall
 
 build:
 	cargo build ${CARGO_BINARY_ARGS}

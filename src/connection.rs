@@ -74,12 +74,6 @@ impl Connection {
     //        .result()
     //        .power())
     //}
-    //
-    //pub fn set_rgbcw(&self, ip: &IpAddr, rgbcw: &RGBCW) -> Result<()> {
-    //    let request = SetPilotRequest::rgbcw(rgbcw);
-    //    self.send_set_request::<SetPilotRequest, SetPilotResponse>(ip, &request)
-    //        .with_context(|| format!("Failed request: {:?}", request))
-    //}
 
     pub fn get_pilot(&self, ip: &IpAddr) -> Result<GetPilotResponse, ConnectionError> {
         let request = GetPilotRequest::default();

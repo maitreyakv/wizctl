@@ -212,10 +212,7 @@ impl Display for BulbKind {
 
 impl BulbKind {
     fn is_color(&self) -> bool {
-        match self {
-            Self::Color => true,
-            _ => false,
-        }
+        matches!(self, Self::Color)
     }
 }
 
